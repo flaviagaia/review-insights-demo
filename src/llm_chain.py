@@ -128,12 +128,19 @@ class ExtractiveMockLLM(LLM):
             r"below my|expected more|no real|generic advice|magazine article)\b", re.I)
 
         material = prompt.split("### REVIEWS")[-1]
+        # protege iniciais ("J.R.R.", "Dr.") para não quebrar frases nelas
+        material = re.sub(r"\b((?:[A-Z]\.){1,4})",
+                          lambda m: m.group(1).replace(".", "\u2024"), material)
         seen, sentences = set(), []
         for s in re.split(r"(?<=[.!?])\s+|\n+", material):
-            s = s.strip().lstrip("- ").strip()
+            s = s.strip().lstrip("- ").strip().replace("\u2024", ".")
             # remove cabeçalhos "[5★] Título:" em QUALQUER posição da frase
             s = re.sub(r"\[\d★\]\s*[^:]{0,80}:\s*", " ", s).strip()
-            if 30 < len(s) < 320 and s.lower() not in seen:
+            # descarta fragmentos: sem pontuação final, curtos ou terminados em inicial
+            if (not re.search(r"[.!?]$", s) or len(s.split()) < 6
+                    or re.search(r"\b[A-Z]\.$", s)):
+                continue
+            if 40 < len(s) < 320 and s.lower() not in seen:
                 seen.add(s.lower())
                 sentences.append(s)
         if len(sentences) < 3:
@@ -142,12 +149,15 @@ class ExtractiveMockLLM(LLM):
         vec = TfidfVectorizer(stop_words="english")
         x = vec.fit_transform(sentences)
         centrality = np.asarray((x @ x.T).mean(axis=1)).ravel()
+        # favorece frases substantivas (centralidade x fator de comprimento)
+        lens = np.array([min(len(t), 220) / 220 for t in sentences])
+        centrality = centrality * (0.6 + 0.4 * lens)
         sim = cosine_similarity(x)
 
         def diverse_top(indices: list[int], k: int) -> list[int]:
             chosen: list[int] = []
             for i in sorted(indices, key=lambda i: -centrality[i]):
-                if all(sim[i, j] < 0.6 for j in chosen):
+                if all(sim[i, j] < 0.45 for j in chosen):
                     chosen.append(i)
                 if len(chosen) == k:
                     break
