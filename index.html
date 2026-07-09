@@ -499,13 +499,36 @@ const LANG = {
         semPos: '(sem destaques)', semNeg: '(sem críticas relevantes)',
         fontes: 'Fontes utilizadas', autor: 'Autor', livro: 'Livro',
         nota: 'Nota', trecho: 'Trecho',
-        demoNote: '[MODO DEMO — resposta extrativa offline; em produção, Claude via Bedrock com o mesmo contrato de citação. Citações permanecem no idioma original.]' },
+        demoNote: '[MODO DEMO — resposta extrativa; trechos traduzidos automaticamente para PT (originais na tabela de fontes). Em produção, Claude via Bedrock sintetiza direto em português.]' },
   en: { pos: 'Recurring strengths', neg: 'Recurring criticisms',
         semPos: '(no highlights)', semNeg: '(no relevant criticisms)',
         fontes: 'Sources used', autor: 'Author', livro: 'Book',
         nota: 'Rating', trecho: 'Excerpt',
         demoNote: '[DEMO MODE — offline extractive answer; in production, Claude via Bedrock with the same citation contract.]' },
 };
+
+/* Tradução automática EN->PT dos trechos (API gratuita MyMemory) quando o
+   idioma é PT. Fallback: mantém o original se a API falhar/limitar.
+   Os originais permanecem na tabela de fontes (citação auditável). */
+const trCache = {};
+async function traduzir(texts) {
+  if (langSel.value !== 'pt') return texts;
+  return Promise.all(texts.map(async t => {
+    const q = t.slice(0, 480);
+    if (trCache[q]) return trCache[q];
+    try {
+      const r = await fetch('https://api.mymemory.translated.net/get?q=' +
+        encodeURIComponent(q) + '&langpair=en|pt-BR',
+        { signal: AbortSignal.timeout(5000) });
+      const j = await r.json();
+      const out = (j && j.responseData && j.responseData.translatedText &&
+                   !/QUERY LENGTH|INVALID|MYMEMORY WARNING/i.test(j.responseData.translatedText))
+                  ? j.responseData.translatedText : t;
+      trCache[q] = out;
+      return out;
+    } catch { return t; }
+  }));
+}
 function localizeSummary(text) {
   if (langSel.value !== 'en') return text;
   return text
@@ -522,9 +545,18 @@ btnSum.onclick = () => {
   clearInterval(typing);
   sumOut.style.display = 'none'; sumSkel.style.display = 'block';
   btnSum.disabled = true;
-  setTimeout(() => {
+  setTimeout(async () => {
     sumSkel.style.display = 'none'; sumOut.style.display = 'block';
-    const html = localizeSummary(e.summary).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    let texto = localizeSummary(e.summary);
+    // traduz os bullets para PT (originais permanecem nos dados)
+    const linhas = texto.split('\n');
+    const idxB = linhas.map((l, i) => l.startsWith('- ') ? i : -1).filter(i => i >= 0);
+    if (idxB.length) {
+      const trad = await traduzir(idxB.map(i => linhas[i].slice(2)));
+      idxB.forEach((i, k) => linhas[i] = '- ' + trad[k]);
+      texto = linhas.join('\n');
+    }
+    const html = texto.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     const plain = html.replace(/<[^>]+>/g, '');
     const tStart = performance.now();
     typing = setInterval(() => {  // progresso por tempo real: não trava em aba de fundo
@@ -573,21 +605,26 @@ btnQA.onclick = () => {
       o.r.x.split(/(?<=[.!?])\s+/).forEach(s => {
         const key = s.toLowerCase();
         if (s.length < 25 || seen.has(key)) return; seen.add(key);
-        (NEG.test(s) ? neg : pos).push(`${s} <span class="src">[R${idx}]</span>`);
+        (NEG.test(s) ? neg : pos).push({ s, ref: idx });
       });
     });
-    const li = (arr, empty) => arr.slice(0,4).map((s,i) =>
-      `<li style="animation-delay:${i*120}ms">${s}</li>`).join('') || `<li>${empty}</li>`;
+    const li = (arr, txts, empty) => arr.length
+      ? arr.map((o, i) => `<li style="animation-delay:${i*120}ms">${txts[i]} <span class="src">[R${o.ref}]</span></li>`).join('')
+      : `<li>${empty}</li>`;
     const srcRows = scored.map((o, idx) =>
       `<tr><td><b class="src">[R${idx}]</b></td><td>${o.r.a}</td><td>${o.r.t}</td><td>${o.r.s}★</td><td>${o.r.x.slice(0,140)}…</td></tr>`).join('');
-    const L = LANG[langSel.value];
-    qaOut.innerHTML = `<div class="glass-card p-6 mb-5">
-      <div class="note" style="margin:0 0 10px">${L.demoNote}</div>
-      <p><span class="badge-pos">${L.pos}</span></p><ul class="ans list-disc pl-5">${li(pos, L.semPos)}</ul>
-      <p class="mt-4"><span class="badge-neg">${L.neg}</span></p><ul class="ans list-disc pl-5">${li(neg, L.semNeg)}</ul></div>
-      <div class="glass-card p-6"><h3 class="font-bold mb-3">📎 ${L.fontes} (${scored.length} reviews)</h3>
-      <div class="overflow-x-auto"><table><thead><tr><th>id</th><th>${L.autor}</th><th>${L.livro}</th><th>${L.nota}</th><th>${L.trecho}</th></tr></thead>
-      <tbody>${srcRows}</tbody></table></div></div>`;
+    const posTop = pos.slice(0, 4), negTop = neg.slice(0, 4);
+    Promise.all([traduzir(posTop.map(o => o.s)), traduzir(negTop.map(o => o.s))])
+      .then(([posTr, negTr]) => {
+        const L = LANG[langSel.value];
+        qaOut.innerHTML = `<div class="glass-card p-6 mb-5">
+          <div class="note" style="margin:0 0 10px">${L.demoNote}</div>
+          <p><span class="badge-pos">${L.pos}</span></p><ul class="ans list-disc pl-5">${li(posTop, posTr, L.semPos)}</ul>
+          <p class="mt-4"><span class="badge-neg">${L.neg}</span></p><ul class="ans list-disc pl-5">${li(negTop, negTr, L.semNeg)}</ul></div>
+          <div class="glass-card p-6"><h3 class="font-bold mb-3">📎 ${L.fontes} (${scored.length} reviews)</h3>
+          <div class="overflow-x-auto"><table><thead><tr><th>id</th><th>${L.autor}</th><th>${L.livro}</th><th>${L.nota}</th><th>${L.trecho}</th></tr></thead>
+          <tbody>${srcRows}</tbody></table></div></div>`;
+      });
     logCall(6000, 400, performance.now() - t0);
   }, 700 + Math.random() * 400);
 };
