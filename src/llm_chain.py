@@ -28,6 +28,23 @@ from langchain_core.language_models.llms import LLM
 
 LOG_PATH = Path("logs/llm_usage.jsonl")
 
+# ------------------------------------------------------- segurança de input
+# Reviews são dado NÃO CONFIÁVEL injetado em prompts. Duas defesas em camadas:
+# 1. sanitize_untrusted(): remove padrões de prompt-injection conhecidos;
+# 2. os prompts envolvem o material em delimitadores e instruem o modelo a
+#    tratar tudo dentro deles como DADOS, nunca como instruções.
+_INJECTION_RE = re.compile(
+    r"(?i)(ignore\s+(all|any|the|previous|prior|above)[\s\S]{0,40}?"
+    r"(instruction|prompt|rule)s?|disregard\s+(the\s+)?(system|previous|above)|"
+    r"you\s+are\s+now\s+|act\s+as\s+(if|a|an)\s|new\s+instructions?\s*:|"
+    r"system\s+prompt|<\s*/?\s*(system|assistant|instruction)\s*>)"
+)
+
+
+def sanitize_untrusted(text: str) -> str:
+    """Neutraliza tentativas de injeção vindas do conteúdo das reviews."""
+    return _INJECTION_RE.sub("[conteúdo removido por segurança]", str(text))
+
 # US$ por 1M tokens (entrada, saída)
 PRICING = {
     "gpt-4o-mini": (0.15, 0.60),
@@ -166,3 +183,17 @@ def get_llm(provider: str | None = None):
                 [CostLoggingCallback(model)])
 
     return ExtractiveMockLLM(), [CostLoggingCallback("mock")]
+
+
+def get_cascade_llm(cheap: str | None = None, premium: str | None = None):
+    """Cascata custo→qualidade (padrão validado em produção no setor público):
+    o modelo barato atende por padrão e o premium assume em caso de falha.
+
+    Implementação idiomática LangChain: `with_fallbacks`. Em produção, o gate
+    também pode ser por confiança (o barato autoavalia a resposta e escala ao
+    premium quando a confiança cai — ex.: Llama -> Claude Sonnet), adicionando
+    um passo de verificação antes do fallback.
+    """
+    llm_cheap, cb1 = get_llm(cheap)
+    llm_premium, cb2 = get_llm(premium or cheap)
+    return llm_cheap.with_fallbacks([llm_premium]), cb1 + cb2

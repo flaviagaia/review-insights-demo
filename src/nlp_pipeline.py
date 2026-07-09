@@ -55,16 +55,35 @@ _POS_WORDS = re.compile(
 )
 
 
-class SentimentModel:
-    """Classificador de sentimento treinado por supervisão fraca (estrelas)."""
+def bayes_smooth(mean, n, prior_mean, strength: float = 50.0):
+    """Suavização bayesiana (empirical Bayes) para médias com n pequeno.
 
-    def __init__(self) -> None:
+    Um autor com 12 reviews não deve competir em ranking com um de 1.200:
+    a média encolhe em direção ao prior (ex.: média do gênero) proporcionalmente
+    à escassez de evidência. `strength` é o pseudo-n do prior.
+    """
+    return (mean * n + prior_mean * strength) / (n + strength)
+
+
+class SentimentModel:
+    """Classificador de sentimento treinado por supervisão fraca (estrelas).
+
+    `calibrate=True` embrulha a LogReg em CalibratedClassifierCV (sigmoid):
+    probabilidades calibradas custam ~3x o tempo de treino, mas tornam o
+    score interpretável como probabilidade real — recomendado em produção.
+    """
+
+    def __init__(self, calibrate: bool = False) -> None:
+        from sklearn.calibration import CalibratedClassifierCV
+
         self.vectorizer = TfidfVectorizer(
             max_features=20_000, ngram_range=(1, 2), stop_words="english", min_df=2
         )
         # class_weight="balanced": a base real é ~87% positiva e o caso de uso
         # é justamente encontrar críticas — recall da classe negativa importa.
-        self.clf = LogisticRegression(max_iter=1000, C=1.0, class_weight="balanced")
+        base = LogisticRegression(max_iter=1000, C=1.0, class_weight="balanced")
+        self.clf = (CalibratedClassifierCV(base, method="sigmoid", cv=3)
+                    if calibrate else base)
         self.report_: str | None = None
 
     def fit(self, df: pd.DataFrame) -> "SentimentModel":
