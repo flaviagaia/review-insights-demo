@@ -13,8 +13,7 @@
 <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-        onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js';document.head.appendChild(s)"></script>
+
 <script>
 /* Resiliência: se algum CDN falhar, a página degrada com elegância em vez de morrer em branco */
 window.__miraGuards = (() => {
@@ -142,6 +141,18 @@ ul.ans li { margin:8px 0; line-height:1.55; color:var(--mira-text-soft);
   animation:shake .5s cubic-bezier(.22,1,.36,1); box-shadow:0 0 26px rgba(235,87,87,.25); }
 @keyframes shake { 0%,100%{transform:none} 20%{transform:translateX(-6px)} 40%{transform:translateX(5px)}
   60%{transform:translateX(-3px)} 80%{transform:translateX(2px)} }
+.vizbox { padding:6px 2px; }
+.hbar-row { display:flex; align-items:center; gap:10px; margin:7px 0; }
+.hbar-label { flex:0 0 130px; font-size:12px; color:var(--mira-text-soft); text-align:right;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hbar-track { flex:1; background:var(--mira-pill-bg); border-radius:9999px; height:18px; overflow:hidden; }
+.hbar-fill { height:100%; border-radius:9999px; min-width:2px;
+  transition:width .8s cubic-bezier(.22,1,.36,1); }
+.hbar-val { flex:0 0 64px; font-family:'JetBrains Mono',monospace; font-size:11.5px;
+  color:var(--mira-text-soft); }
+.spark { width:100%; height:150px; display:block; }
+.spark-lbls { display:flex; justify-content:space-between; font-size:10.5px;
+  color:var(--mira-text-softer); margin-top:4px; }
 .note { font-size:12px; color:var(--mira-text-softer); font-style:italic; margin-top:10px; line-height:1.5; }
 label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-bottom:5px;
   font-weight:600; letter-spacing:.6px; text-transform:uppercase; }
@@ -218,12 +229,12 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
   </div>
   <div class="grid md:grid-cols-2 gap-5 mb-6">
     <div class="glass-card p-6" data-aos="fade-up"><div class="eyebrow">Distribuição</div>
-      <h3 class="font-bold mb-3">Notas dos leitores</h3><canvas id="chHist" height="170"></canvas></div>
+      <h3 class="font-bold mb-3">Notas dos leitores</h3><div id="chHist" class="vizbox"></div></div>
     <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="120"><div class="eyebrow">Tendência</div>
-      <h3 class="font-bold mb-3">Sentimento ao longo do tempo</h3><canvas id="chYear" height="170"></canvas></div>
+      <h3 class="font-bold mb-3">Sentimento ao longo do tempo</h3><div id="chYear" class="vizbox"></div></div>
   </div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Voz do leitor</div>
-    <h3 class="font-bold mb-3">Aspectos mencionados (cor = polaridade)</h3><canvas id="chAsp" height="140"></canvas></div>
+    <h3 class="font-bold mb-3">Aspectos mencionados (cor = polaridade)</h3><div id="chAsp" class="vizbox"></div></div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up">
     <div class="eyebrow">IA Generativa</div><h3 class="font-bold mb-3">Sumário executivo</h3>
     <button class="btn" id="btnSum">🧠 Gerar sumário executivo</button>
@@ -281,7 +292,7 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
       <p class="mono text-4xl font-black primary-color" id="mLat">0</p><p class="text-softer text-xs mt-2">LATÊNCIA MÉDIA (MS)</p></div>
   </div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Observabilidade</div>
-    <h3 class="font-bold mb-3">Custo acumulado por chamada</h3><canvas id="chCost" height="140"></canvas></div>
+    <h3 class="font-bold mb-3">Custo acumulado por chamada</h3><div id="chCost" class="vizbox"></div></div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up">
     <div class="eyebrow">FinOps</div><h3 class="font-bold mb-3">Simulador de custo mensal por modelo</h3>
     <div class="flex flex-wrap gap-5 items-end mb-3">
@@ -290,7 +301,7 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
       <div><label>Tokens entrada/análise</label><input type="number" id="simIn" value="20000" step="5000"></div>
       <div><label>Tokens saída/análise</label><input type="number" id="simOut" value="2000" step="500"></div>
     </div>
-    <canvas id="chSim" height="130"></canvas>
+    <div id="chSim" class="vizbox"></div>
     <div class="note">Estratégia de cascata: modelo barato como principal, escalonando ao premium só quando a
       confiança cai (Haiku no map, Sonnet no reduce). Referência: análise manual ≈ R$ 714.</div>
   </div>
@@ -330,18 +341,7 @@ const PALETTES = {
 };
 let THEME = 'light';
 const pal = () => PALETTES[THEME];
-// resiliência: se o CDN do Chart.js falhar, o app segue funcional sem gráficos
-const hasChart = () => typeof Chart !== 'undefined';
-function applyChartDefaults() {
-  if (!hasChart()) return;
-  Chart.defaults.font.family = "'Inter',sans-serif";
-  // animação desativada: com rAF suspenso (aba em segundo plano) as barras
-  // ficavam presas no frame zero (base null) — conteúdo > enfeite.
-  Chart.defaults.animation = false;
-  Chart.defaults.color = pal().SOFT;
-  Chart.defaults.scale.grid = { color: pal().GRID };
-}
-applyChartDefaults();
+// gráficos em HTML/CSS puro: sem dependência de lib de chart
 
 /* ---------- toggle de tema ---------- */
 const themeToggle = document.getElementById('themeToggle');
@@ -349,7 +349,6 @@ themeToggle.onclick = () => {
   THEME = THEME === 'light' ? 'dark' : 'light';
   document.documentElement.dataset.theme = THEME === 'dark' ? 'dark' : '';
   themeToggle.textContent = THEME === 'light' ? '🌙' : '☀️';
-  applyChartDefaults();
   render(); sim(); drawCost();   // re-renderiza gráficos com a nova paleta
 };
 
@@ -418,12 +417,29 @@ function countUp(el, target, fmt) {
       return t => el.textContent = fmt(i(t)); });
 }
 
-/* ---------- análise ---------- */
-let charts = {};
-function mkChart(id, cfg) {
-  if (!hasChart()) return;
-  if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id), cfg);
+/* ---------- gráficos HTML/CSS (zero dependência: nunca falham) ---------- */
+function renderBars(id, items, fmt) {
+  const max = Math.max(...items.map(i => i.v), 1);
+  document.getElementById(id).innerHTML = items.map(i => `
+    <div class="hbar-row">
+      <div class="hbar-label" title="${i.l}">${i.l}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${(i.v / max * 100).toFixed(1)}%;background:${i.c}"></div></div>
+      <div class="hbar-val">${fmt ? fmt(i.v) : i.v.toLocaleString('pt-BR')}</div>
+    </div>`).join('');
+}
+function renderSpark(id, values, labels, color) {
+  const el = document.getElementById(id);
+  if (!values.length) { el.innerHTML = '<div class="note">sem dados</div>'; return; }
+  const W = 600, H = 150, min = Math.min(...values), max = Math.max(...values);
+  const nx = i => 8 + i * (W - 16) / Math.max(values.length - 1, 1);
+  const ny = v => H - 12 - (max === min ? .5 : (v - min) / (max - min)) * (H - 28);
+  const pts = values.map((v, i) => `${nx(i).toFixed(1)},${ny(v).toFixed(1)}`).join(' ');
+  el.innerHTML = `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"
+        stroke-linejoin="round" stroke-linecap="round"/>
+      ${values.map((v, i) => `<circle cx="${nx(i).toFixed(1)}" cy="${ny(v).toFixed(1)}" r="3" fill="${color}"/>`).join('')}
+    </svg>
+    <div class="spark-lbls"><span>${labels[0] ?? ''}</span><span>${labels[Math.floor(labels.length/2)] ?? ''}</span><span>${labels[labels.length-1] ?? ''}</span></div>`;
 }
 
 const selKind = document.getElementById('selKind'), selEnt = document.getElementById('selEnt');
@@ -436,27 +452,15 @@ function ent() { return DATA.entities.find(e => e.kind === selKind.value && e.na
 function render() {
   const e = ent(); if (!e) return;
   countUp(kN, e.n, v => Math.round(v).toLocaleString('pt-BR'));
-  countUp(kS, e.score, v => v.toFixed(2) + '★');
+  countUp(kS, e.score, v => v.toFixed(2) + '\u2605');
   countUp(kSent, e.sent * 100, v => Math.round(v) + '%');
   countUp(kU, e.users, v => Math.round(v).toLocaleString('pt-BR'));
-  mkChart('chHist', { type:'bar',
-    data:{ labels:['1★','2★','3★','4★','5★'], datasets:[{ data:[1,2,3,4,5].map(k => e.hist[k]||0),
-      backgroundColor:pal().HIST, borderRadius:8 }]},
-    options:{ plugins:{legend:{display:false}} }});
-  const ctx = document.getElementById('chYear').getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 0, 190);
-  grad.addColorStop(0, pal().GRAD[0]); grad.addColorStop(1, pal().GRAD[1]);
-  mkChart('chYear', { type:'line',
-    data:{ labels:e.yearly.map(y=>y[0]), datasets:[{ data:e.yearly.map(y=>y[1]),
-      borderColor:pal().PRIM, backgroundColor:grad, fill:true, tension:.35, pointRadius:2.5,
-      pointBackgroundColor:pal().ACC }]},
-    options:{ plugins:{legend:{display:false}}, scales:{y:{min:0,max:1}} }});
-  mkChart('chAsp', { type:'bar',
-    data:{ labels:e.aspects.map(a=>a.a), datasets:[{ data:e.aspects.map(a=>a.n),
-      backgroundColor:e.aspects.map(a=> a.p >= 0.15 ? pal().GREEN : a.p <= -0.15 ? pal().RED : pal().ACC),
-      borderRadius:8 }]},
-    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{
-      label: c => ` menções: ${c.raw} · polaridade: ${e.aspects[c.dataIndex].p}` }}} }});
+  renderBars('chHist', [1,2,3,4,5].map((k, i) => ({
+    l: k + '\u2605', v: e.hist[k] || 0, c: pal().HIST[i] })));
+  renderSpark('chYear', e.yearly.map(y => y[1]), e.yearly.map(y => y[0]), pal().PRIM);
+  renderBars('chAsp', e.aspects.map(a => ({
+    l: a.a, v: a.n,
+    c: a.p >= 0.15 ? pal().GREEN : a.p <= -0.15 ? pal().RED : pal().ACC })));
   document.querySelector('#tblRev tbody').innerHTML = e.reviewers.map(r =>
     `<tr><td style="color:var(--mira-text);font-weight:600">${r.name}</td><td>${r.n}</td><td>${r.votes}</td><td>${r.len}</td>
      <td>${r.score}</td><td><b class="primary-color mono">${r.rel}</b></td></tr>`).join('');
@@ -480,35 +484,8 @@ function logCall(tin, tout, ms) {
 function drawCost() {
   if (!usage.length) return;
   let acc = 0;
-  mkChart('chCost', { type:'line',
-    data:{ labels:usage.map(u=>u.t), datasets:[{ data:usage.map(u=> +(acc+=u.cost).toFixed(6)),
-      borderColor:pal().PRIM, tension:.25, pointRadius:3.5, pointBackgroundColor:pal().ACC }]},
-    options:{ plugins:{legend:{display:false}} }});
-}
-
-/* ---------- idioma das respostas geradas ----------
-   Com LLM real (Streamlit + OpenAI/Bedrock) o modelo sintetiza no idioma
-   escolhido. Nesta demo extrativa: títulos e rótulos seguem o idioma;
-   citações permanecem no original (citação é evidência, não se traduz). */
-const LANG = {
-  pt: { pos: 'Pontos fortes recorrentes', neg: 'Críticas recorrentes',
-        semPos: '(sem destaques)', semNeg: '(sem críticas relevantes)',
-        fontes: 'Fontes utilizadas', autor: 'Autor', livro: 'Livro',
-        nota: 'Nota', trecho: 'Trecho',
-        demoNote: '[MODO DEMO — resposta extrativa offline; em produção, Claude via Bedrock com o mesmo contrato de citação. Citações permanecem no idioma original.]' },
-  en: { pos: 'Recurring strengths', neg: 'Recurring criticisms',
-        semPos: '(no highlights)', semNeg: '(no relevant criticisms)',
-        fontes: 'Sources used', autor: 'Author', livro: 'Book',
-        nota: 'Rating', trecho: 'Excerpt',
-        demoNote: '[DEMO MODE — offline extractive answer; in production, Claude via Bedrock with the same citation contract.]' },
-};
-function localizeSummary(text) {
-  if (langSel.value !== 'en') return text;
-  return text
-    .replace('[MODO DEMO — LLM extrativo offline; em produção, Claude via Bedrock com o mesmo chain]',
-             '[DEMO MODE — offline extractive LLM; in production, Claude via Bedrock with the same chain]')
-    .replace('**Pontos fortes recorrentes:**', '**Recurring strengths:**')
-    .replace('**Críticas recorrentes:**', '**Recurring criticisms:**');
+  const cum = usage.map(u => +(acc += u.cost).toFixed(6));
+  renderSpark('chCost', cum, usage.map(u => '#' + u.t), pal().PRIM);
 }
 
 /* ---------- sumário com efeito de digitação ---------- */
@@ -595,13 +572,12 @@ const MODELS = { 'Claude Haiku (Bedrock)':[0.80,4.00], 'Claude Sonnet (Bedrock)'
 function sim() {
   const an = +simAn.value, ti = +simIn.value, to = +simOut.value;
   lblAn.textContent = an;
-  const vals = Object.values(MODELS).map(([pi, po]) => +((ti/1e6*pi + to/1e6*po) * an * 5.5).toFixed(2));
-  mkChart('chSim', { type:'bar',
-    data:{ labels:Object.keys(MODELS), datasets:[{ data:vals,
-      backgroundColor:[pal().PRIM, pal().ACC, pal().GREEN, pal().BAR4], borderRadius:8 }]},
-    options:{ plugins:{legend:{display:false},
-      title:{display:true, color:pal().SOFT, text:`Custo LLM mensal (R$) para ${an} análises`}} }});
+  const cores = [pal().PRIM, pal().ACC, pal().GREEN, pal().BAR4];
+  renderBars('chSim', Object.entries(MODELS).map(([nome, [pi, po]], i) => ({
+    l: nome, v: +((ti/1e6*pi + to/1e6*po) * an * 5.5).toFixed(2), c: cores[i] })),
+    v => 'R$ ' + v.toFixed(2));
 }
+
 [simAn, simIn, simOut].forEach(el => el.oninput = sim);
 
 /* ---------- orçamento ---------- */
