@@ -387,8 +387,16 @@ tabsEl.forEach(t => t.onclick = () => {
   t.classList.add('active'); moveInk(t);
   document.getElementById(t.dataset.p).classList.add('active');
   if (typeof AOS !== 'undefined') AOS.refreshHard();
+  setTimeout(forceReveal, 400);  // nada fica invisível se o AOS não disparar
 });
 window.addEventListener('resize', () => moveInk(document.querySelector('.tabbtn.active')));
+
+/* Failsafe de acessibilidade: animação é enfeite, conteúdo é obrigação.
+   Se o AOS não disparar (scroll programático, página longa, rAF pausado),
+   força todos os elementos ao estado final visível. */
+function forceReveal() {
+  document.querySelectorAll('[data-aos]').forEach(el => el.classList.add('aos-animate'));
+}
 
 /* ---------- contadores (d3 tween, padrão Mira) ---------- */
 function countUp(el, target, fmt) {
@@ -437,7 +445,7 @@ function render() {
     options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{
       label: c => ` menções: ${c.raw} · polaridade: ${e.aspects[c.dataIndex].p}` }}} }});
   document.querySelector('#tblRev tbody').innerHTML = e.reviewers.map(r =>
-    `<tr><td class="text-white">${r.name}</td><td>${r.n}</td><td>${r.votes}</td><td>${r.len}</td>
+    `<tr><td style="color:var(--mira-text);font-weight:600">${r.name}</td><td>${r.n}</td><td>${r.votes}</td><td>${r.len}</td>
      <td>${r.score}</td><td><b class="primary-color mono">${r.rel}</b></td></tr>`).join('');
   sumOut.style.display = 'none'; sumSkel.style.display = 'none';
 }
@@ -580,6 +588,7 @@ if (typeof AOS !== 'undefined') {
 } else {  // CDN falhou: remove data-aos para nada ficar invisível
   document.querySelectorAll('[data-aos]').forEach(el => el.removeAttribute('data-aos'));
 }
+setTimeout(forceReveal, 1500);  // failsafe global pós-carregamento
 fillEnts(); sim(); updBudget();
 moveInk(document.querySelector('.tabbtn.active'));
 </script>
