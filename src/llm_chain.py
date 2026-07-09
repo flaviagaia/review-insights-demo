@@ -123,7 +123,7 @@ class ExtractiveMockLLM(LLM):
         # "not"/"boring" soltos geram falsos negativos ("not just the best",
         # "other books were boring, but this..."); exigimos contexto negativo.
         neg_re = re.compile(
-            r"\b(poorly|bad|terrible|awful|waste of|disappoint\w*|weak|"
+            r"\b(poorly|shortcomings?|painful|ill-\w+|typos?|misprints?|complaints?|(?<!no )(?<!without )problems?|bad|terrible|awful|waste of|disappoint\w*|weak|"
             r"confusing|shallow|broken|wrong|errors?|flat|predictable|"
             r"repetitive|rushed|letdown|outdated|clumsy|superficial|"
             r"not\s+(?:worth|good|great|recommended?|impressed|useful|helpful|"
@@ -147,6 +147,7 @@ class ExtractiveMockLLM(LLM):
             s = s.strip().lstrip("- ").strip().replace("\u2024", ".")
             # remove cabeçalhos "[5★] Título:" em QUALQUER posição da frase
             s = re.sub(r"\[\d★\]\s*[^:]{0,80}:\s*", " ", s).strip()
+            s = re.sub(r"^\[\d★\]\s*", "", s)  # cabeçalho sem ':' (summary quebrado)
             # summary repetido no início do texto ('"Título""Título" é...')
             s = re.sub(r'^(".{0,80}?")\s*(?=")', "", s).strip()
             # descarta fragmentos: sem pontuação final, curtos ou terminados em inicial
