@@ -1,6 +1,6 @@
 # Versões pinadas em faixas estreitas: reprodutibilidade > conveniência.
 # Testado com as versões mínimas de cada faixa (CI executa a cada push).
-pandas>=2.3,<3
+pandas>=3.0.3,<4
 numpy>=2.2,<3
 scikit-learn>=1.7,<2
 matplotlib>=3.10,<4
