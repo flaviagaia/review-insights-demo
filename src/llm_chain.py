@@ -147,6 +147,8 @@ class ExtractiveMockLLM(LLM):
             s = s.strip().lstrip("- ").strip().replace("\u2024", ".")
             # remove cabeçalhos "[5★] Título:" em QUALQUER posição da frase
             s = re.sub(r"\[\d★\]\s*[^:]{0,80}:\s*", " ", s).strip()
+            # summary repetido no início do texto ('"Título""Título" é...')
+            s = re.sub(r'^(".{0,80}?")\s*(?=")', "", s).strip()
             # descarta fragmentos: sem pontuação final, curtos ou terminados em inicial
             if (not re.search(r"[.!?]$", s) or len(s.split()) < 6
                     or re.search(r"\b[A-Z]\.$", s)):
