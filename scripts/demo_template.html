@@ -511,22 +511,33 @@ const LANG = {
    idioma é PT. Fallback: mantém o original se a API falhar/limitar.
    Os originais permanecem na tabela de fontes (citação auditável). */
 const trCache = {};
+async function trChunk(q) {   // 1 requisição (limite ~500 chars da API)
+  if (trCache[q]) return trCache[q];
+  try {
+    const r = await fetch('https://api.mymemory.translated.net/get?q=' +
+      encodeURIComponent(q) + '&langpair=en|pt-BR',
+      { signal: AbortSignal.timeout(5000) });
+    const j = await r.json();
+    const out = (j && j.responseData && j.responseData.translatedText &&
+                 !/QUERY LENGTH|INVALID|MYMEMORY WARNING/i.test(j.responseData.translatedText))
+                ? j.responseData.translatedText : q;
+    trCache[q] = out;
+    return out;
+  } catch { return q; }
+}
 async function traduzir(texts) {
   if (langSel.value !== 'pt') return texts;
   return Promise.all(texts.map(async t => {
-    const q = t.slice(0, 480);
-    if (trCache[q]) return trCache[q];
-    try {
-      const r = await fetch('https://api.mymemory.translated.net/get?q=' +
-        encodeURIComponent(q) + '&langpair=en|pt-BR',
-        { signal: AbortSignal.timeout(5000) });
-      const j = await r.json();
-      const out = (j && j.responseData && j.responseData.translatedText &&
-                   !/QUERY LENGTH|INVALID|MYMEMORY WARNING/i.test(j.responseData.translatedText))
-                  ? j.responseData.translatedText : t;
-      trCache[q] = out;
-      return out;
-    } catch { return t; }
+    // quebra textos longos por frase (nada é truncado)
+    const chunks = [];
+    let atual = '';
+    for (const fr of t.split(/(?<=[.!?])\s+/)) {
+      if ((atual + ' ' + fr).length > 440) { if (atual) chunks.push(atual); atual = fr; }
+      else atual = atual ? atual + ' ' + fr : fr;
+    }
+    if (atual) chunks.push(atual);
+    const partes = await Promise.all(chunks.map(c => trChunk(c.slice(0, 480))));
+    return partes.join(' ');
   }));
 }
 function localizeSummary(text) {
