@@ -120,19 +120,30 @@ class ExtractiveMockLLM(LLM):
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.metrics.pairwise import cosine_similarity
 
+        # "not"/"boring" soltos geram falsos negativos ("not just the best",
+        # "other books were boring, but this..."); exigimos contexto negativo.
         neg_re = re.compile(
-            r"\b(not|poorly|bad|terrible|awful|waste|disappoint\w*|boring|weak|"
-            r"confusing|shallow|slow|broken|wrong|errors?|flat|predictable|"
+            r"\b(poorly|bad|terrible|awful|waste of|disappoint\w*|weak|"
+            r"confusing|shallow|broken|wrong|errors?|flat|predictable|"
             r"repetitive|rushed|letdown|outdated|clumsy|superficial|"
-            r"too (?:much|many|expensive)|hard to|almost no|struggled|gave up|"
-            r"below my|expected more|no real|generic advice|magazine article)\b", re.I)
+            r"not\s+(?:worth|good|great|recommended?|impressed|useful|helpful|"
+            r"engaging|original|well)|"
+            r"(?:do|does|did|would|could)\s*n[o']t\s+(?:work|deliver|translate|"
+            r"finish|recommend|hold|live up)|"
+            r"(?:this|the book|it) (?:was|is|felt) (?:boring|slow|dull)|"
+            r"too (?:much|many|expensive|slow|long)|hard to (?:follow|read|finish)|"
+            r"almost no|struggled|gave up|below my|expected more|no real|"
+            r"generic advice|magazine article)\b", re.I)
 
         material = prompt.split("### REVIEWS")[-1]
         # protege iniciais ("J.R.R.", "Dr.") para não quebrar frases nelas
         material = re.sub(r"\b((?:[A-Z]\.){1,4})",
                           lambda m: m.group(1).replace(".", "\u2024"), material)
         seen, sentences = set(), []
-        for s in re.split(r"(?<=[.!?])\s+|\n+", material):
+        # tambem quebra em '."Proxima' (ponto colado na frase seguinte,
+        # comum em reviews sem espaco apos o ponto final)
+        for s in re.split(r"(?<=[.!?])\s+|(?<=[a-z\"\u201d][.!?])(?=[\"\u201c\u2018'A-Z])|\n+",
+                          material):
             s = s.strip().lstrip("- ").strip().replace("\u2024", ".")
             # remove cabeçalhos "[5★] Título:" em QUALQUER posição da frase
             s = re.sub(r"\[\d★\]\s*[^:]{0,80}:\s*", " ", s).strip()

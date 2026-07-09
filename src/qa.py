@@ -18,6 +18,8 @@ from langchain_core.retrievers import BaseRetriever
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from .guardrails import (REFUSAL_SCOPE, guard_answer, guard_question,
+                         guard_scope, has_domain_anchor)
 from .llm_chain import get_llm, sanitize_untrusted
 
 # Expansão de consulta PT->EN: reviews em inglês + retriever lexical na POC.
@@ -123,18 +125,30 @@ def answer_question(question: str, retriever: TfidfReviewRetriever,
 
     `language` controla o idioma da resposta com provedores reais; no modo
     mock (extrativo) os trechos citados permanecem no idioma original.
+
+    Guardrails (ver src/guardrails.py): conteúdo impróprio e injeção são
+    recusados na entrada; pergunta fora do escopo é recusada antes do LLM;
+    citação inexistente derruba a resposta na saída (anti-alucinação).
     """
+    ok, refusal = guard_question(question)
+    if not ok:
+        return refusal, pd.DataFrame()
+
+    if not has_domain_anchor(question):
+        return REFUSAL_SCOPE, pd.DataFrame()
+
     llm, callbacks = get_llm(provider)
 
     docs = retriever.invoke(question)
-    if not docs:
-        return "Não há evidência suficiente na base para responder.", pd.DataFrame()
+    if not docs or not guard_scope(docs):
+        return REFUSAL_SCOPE, pd.DataFrame()
 
     chain = QA_PROMPT | llm | StrOutputParser()
     answer = chain.invoke(
         {"question": question, "context": _format_docs(docs), "language": language},
         config={"callbacks": callbacks},
     )
+    answer = guard_answer(answer, docs)
     sources = pd.DataFrame([
         {"id": d.metadata["id"], "author": d.metadata["author"],
          "Title": d.metadata["title"], "review/score": d.metadata["score"],
