@@ -124,6 +124,9 @@ with tab_qa:
     st.caption("Recuperação TF-IDF (offline) + LLM. Toda resposta cita as reviews-fonte "
                "[R0], [R1]... — a defesa estrutural contra alucinação. Em produção: "
                "embeddings + Bedrock Knowledge Bases, mesmo contrato de citação.")
+    st.caption("🛡️ **Guardrails ativos** (src/guardrails.py): conteúdo impróprio/injeção "
+               "recusado na entrada; pergunta fora do escopo recusada antes do LLM "
+               "(zero tokens); citação inexistente derruba a resposta na saída.")
     examples = [
         "Quais as críticas recorrentes aos livros de negócios?",
         "O que os leitores acham do ritmo dos livros de ficção?",
