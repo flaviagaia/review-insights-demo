@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Review Insights — MVP (estilo Mira)</title>
+<!-- Dados: reviews públicas do dataset Amazon Books Reviews (Kaggle), amostradas.
+     Identificadores de usuários PSEUDONIMIZADOS (hash) — nenhum nome real exibido.
+     Nenhuma credencial, nenhuma API key. -->
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+<script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
+        onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js';document.head.appendChild(s)"></script>
+<script>
+/* Resiliência: se algum CDN falhar, a página degrada com elegância em vez de morrer em branco */
+window.__miraGuards = (() => {
+  if (typeof window.AOS === 'undefined') {
+    document.querySelectorAll('[data-aos]').forEach(e => e.removeAttribute('data-aos'));
+    window.AOS = { init(){}, refreshHard(){} };
+  }
+  if (typeof window.Chart === 'undefined') {
+    window.Chart = class { constructor(){} destroy(){} };
+    window.Chart.defaults = { font:{}, animation:{}, scale:{ grid:{} }, color:'' };
+  }
+  if (typeof window.d3 === 'undefined') {
+    const chain = { append(){return this}, attr(){return this}, transition(){return this},
+      duration(){return this}, ease(){return this}, tween(){return this}, text(){return this} };
+    window.d3 = { select: () => chain, timer(){}, easeCubicOut: t => t,
+      interpolateNumber: (a,b) => t => a + (b-a)*t };
+  }
+});
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* @MIRA:THEME:START — light-minimal (padrão) */
+:root {
+  --mira-primary:#E8722A; --mira-bg:#FAFAF7; --mira-text:#1A1A1A;
+  --mira-text-soft:rgba(26,26,26,.72); --mira-text-softer:rgba(26,26,26,.50);
+  --mira-card-bg:rgba(255,255,255,.85); --mira-card-border:rgba(0,0,0,.08);
+  --mira-glow-soft:rgba(232,114,42,.10); --mira-glow-strong:rgba(232,114,42,.18);
+  --mira-icon-bg:rgba(232,114,42,.12); --mira-icon-border:rgba(232,114,42,.30);
+  --mira-pill-bg:rgba(0,0,0,.03); --mira-pill-border:rgba(0,0,0,.08);
+  --mira-stage-glow:rgba(232,114,42,.05); --mira-accent-2:#2A6FE8;
+  --mira-green:#2E8B57; --mira-red:#C0392B;
+  --mira-input-bg:rgba(0,0,0,.03); --mira-opt-bg:#ffffff;
+}
+/* mira-dark (identidade clássica) via toggle */
+[data-theme="dark"] {
+  --mira-primary:#FF904D; --mira-bg:#000000; --mira-text:#ffffff;
+  --mira-text-soft:rgba(255,255,255,.70); --mira-text-softer:rgba(255,255,255,.50);
+  --mira-card-bg:rgba(255,255,255,.05); --mira-card-border:rgba(255,255,255,.10);
+  --mira-glow-soft:rgba(255,144,77,.15); --mira-glow-strong:rgba(255,144,77,.25);
+  --mira-icon-bg:rgba(255,144,77,.15); --mira-icon-border:rgba(255,144,77,.30);
+  --mira-pill-bg:rgba(255,255,255,.04); --mira-pill-border:rgba(255,255,255,.08);
+  --mira-stage-glow:rgba(255,144,77,.06); --mira-accent-2:#FFC766;
+  --mira-green:#6FCF97; --mira-red:#EB5757;
+  --mira-input-bg:rgba(255,255,255,.06); --mira-opt-bg:#141414;
+}
+/* @MIRA:THEME:END */
+body { background:var(--mira-bg); min-height:100vh; color:var(--mira-text);
+       font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased;
+       transition:background .4s ease, color .4s ease; }
+#orbit .orb { stroke:var(--mira-icon-border); fill:none; }
+#orbit .orbglow { fill:var(--mira-icon-bg); }
+#themeToggle { position:fixed; top:14px; right:16px; z-index:60; width:42px; height:42px;
+  border-radius:9999px; display:grid; place-items:center; cursor:pointer; font-size:18px;
+  background:var(--mira-card-bg); border:1px solid var(--mira-card-border);
+  backdrop-filter:blur(12px); box-shadow:0 6px 18px var(--mira-glow-soft);
+  transition:transform .3s cubic-bezier(.22,1,.36,1); user-select:none; }
+#themeToggle:hover { transform:rotate(20deg) scale(1.08); }
+.primary-color { color:var(--mira-primary); }
+.text-soft { color:var(--mira-text-soft); } .text-softer { color:var(--mira-text-softer); }
+.mono { font-family:'JetBrains Mono',monospace; }
+.glass-card { background:var(--mira-card-bg); backdrop-filter:blur(10px);
+  border:1px solid var(--mira-card-border); box-shadow:0 10px 30px var(--mira-glow-soft);
+  transition:all .3s ease; border-radius:.9rem; }
+.glass-card:hover { transform:translateY(-6px); box-shadow:0 20px 40px var(--mira-glow-strong); }
+.icon-hero { width:46px; height:46px; border-radius:14px; display:flex; flex:0 0 auto;
+  align-items:center; justify-content:center; background:var(--mira-icon-bg);
+  border:1px solid var(--mira-icon-border); font-size:20px; }
+.attribute-pill { background:var(--mira-pill-bg); border:1px solid var(--mira-pill-border);
+  transition:all .25s ease; border-radius:9999px; cursor:pointer; }
+.attribute-pill:hover { background:var(--mira-icon-bg); border-color:var(--mira-icon-border);
+  transform:translateY(-3px); }
+.anim-stage { background:radial-gradient(circle at 50% 40%, var(--mira-stage-glow), transparent 70%); }
+select, input[type=text], input[type=number] { background:var(--mira-input-bg);
+  border:1px solid var(--mira-card-border); border-radius:.7rem; padding:.65rem .9rem;
+  color:var(--mira-text); font-size:14px; transition:border-color .25s, box-shadow .25s; }
+select:focus, input:focus { outline:none; border-color:var(--mira-primary);
+  box-shadow:0 0 0 4px var(--mira-glow-soft); }
+select option { background:var(--mira-opt-bg); color:var(--mira-text); }
+input[type=range] { accent-color:var(--mira-primary); }
+.btn { background:var(--mira-primary); color:#181818; font-weight:700; border:none;
+  border-radius:.7rem; padding:.7rem 1.4rem; font-size:14px; cursor:pointer;
+  transition:transform .2s, box-shadow .25s; }
+.btn:hover { transform:translateY(-2px); box-shadow:0 10px 26px var(--mira-glow-strong); }
+.btn:active { transform:scale(.97); } .btn:disabled { opacity:.5; cursor:wait; }
+.tabbtn { color:var(--mira-text-soft); border-radius:9999px; padding:.7rem 1.2rem; flex:1;
+  text-align:center; font-weight:600; font-size:14px; cursor:pointer; position:relative; z-index:2;
+  transition:color .35s; user-select:none; }
+.tabbtn.active { color:#181818; }
+#ink { position:absolute; top:6px; bottom:6px; border-radius:9999px; background:var(--mira-primary);
+  transition:left .45s cubic-bezier(.22,1,.36,1), width .45s cubic-bezier(.22,1,.36,1); z-index:1;
+  box-shadow:0 0 22px var(--mira-glow-strong); }
+.panel { display:none; } .panel.active { display:block; animation:panelIn .5s cubic-bezier(.22,1,.36,1); }
+@keyframes panelIn { from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none} }
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; color:var(--mira-primary); border-bottom:1px solid var(--mira-icon-border);
+     padding:9px 11px; font-weight:700; text-transform:uppercase; font-size:11px; letter-spacing:1px; }
+td { padding:9px 11px; border-bottom:1px solid var(--mira-card-border); color:var(--mira-text-soft); }
+tbody tr:hover { background:var(--mira-pill-bg); }
+.summary { background:var(--mira-pill-bg); border:1px solid var(--mira-card-border);
+  border-radius:.9rem; padding:16px 20px; font-size:14px; white-space:pre-wrap;
+  line-height:1.65; color:var(--mira-text-soft); }
+.summary b { color:var(--mira-accent-2); }
+.cursor { display:inline-block; width:8px; height:15px; background:var(--mira-primary);
+  vertical-align:-2px; animation:blink .8s steps(1) infinite; }
+@keyframes blink { 50%{opacity:0} }
+.skeleton { border-radius:8px; height:12px; margin:10px 0;
+  background:linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,144,77,.18) 50%, rgba(255,255,255,.05) 75%);
+  background-size:200% 100%; animation:shimmer 1.1s infinite; }
+@keyframes shimmer { from{background-position:200% 0} to{background-position:-200% 0} }
+.src { font-size:11.5px; color:var(--mira-primary); font-weight:700; }
+.badge-pos { color:var(--mira-green); font-weight:700; } .badge-neg { color:var(--mira-red); font-weight:700; }
+ul.ans li { margin:8px 0; line-height:1.55; color:var(--mira-text-soft);
+  opacity:0; animation:liIn .5s cubic-bezier(.22,1,.36,1) forwards; }
+@keyframes liIn { from{opacity:0; transform:translateX(-10px)} to{opacity:1; transform:none} }
+.progress { background:rgba(255,255,255,.07); border-radius:9999px; height:16px; overflow:hidden;
+  border:1px solid var(--mira-card-border); }
+.progress > div { background:linear-gradient(90deg, var(--mira-green), #9be3b7); height:100%;
+  transition:width .7s cubic-bezier(.22,1,.36,1); border-radius:9999px;
+  box-shadow:0 0 14px rgba(111,207,151,.5); }
+.alert { border-radius:.8rem; padding:12px 16px; font-size:13.5px; margin-top:12px; }
+.alert.ok { background:rgba(111,207,151,.08); color:var(--mira-green); border:1px solid rgba(111,207,151,.3); }
+.alert.bad { background:rgba(235,87,87,.1); color:var(--mira-red); border:1px solid rgba(235,87,87,.4);
+  animation:shake .5s cubic-bezier(.22,1,.36,1); box-shadow:0 0 26px rgba(235,87,87,.25); }
+@keyframes shake { 0%,100%{transform:none} 20%{transform:translateX(-6px)} 40%{transform:translateX(5px)}
+  60%{transform:translateX(-3px)} 80%{transform:translateX(2px)} }
+.note { font-size:12px; color:var(--mira-text-softer); font-style:italic; margin-top:10px; line-height:1.5; }
+label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-bottom:5px;
+  font-weight:600; letter-spacing:.6px; text-transform:uppercase; }
+.metric-ring { position:absolute; top:-2.2rem; right:-2.2rem; width:8rem; height:8rem; opacity:.3; }
+.eyebrow { font-size:10.5px; font-weight:700; letter-spacing:2.4px; color:var(--mira-primary);
+  text-transform:uppercase; margin-bottom:4px; }
+</style>
+</head>
+<body>
+<div id="themeToggle" title="Alternar tema claro/escuro">🌙</div>
+
+<!-- ============ HERO com metáfora animada (loop contínuo D3) ============ -->
+<header class="anim-stage relative overflow-hidden">
+  <div class="max-w-6xl mx-auto px-8 pt-12 pb-24 flex flex-col md:flex-row items-center gap-10">
+    <svg id="orbit" width="240" height="240" viewBox="0 0 240 240" class="flex-none"></svg>
+    <div>
+      <h1 class="text-4xl md:text-5xl font-black" data-aos="fade-up">
+        Review <span class="primary-color">Insights</span></h1>
+      <p class="text-soft text-lg mt-4 max-w-xl" data-aos="fade-up" data-aos-delay="120">
+        De <b class="primary-color">3 dias</b> de análise manual para <b class="primary-color">segundos</b> —
+        NLP clássico a custo zero, LLM aplicado onde gera valor, FinOps desde o primeiro dia.</p>
+      <div class="mt-5 flex flex-wrap gap-2" data-aos="fade-up" data-aos-delay="240">
+        <span class="attribute-pill px-4 py-1.5 text-xs text-soft">demo interativa</span>
+        <span class="attribute-pill px-4 py-1.5 text-xs text-soft">dados reais (amostra de 3M reviews, leitores pseudonimizados)</span>
+        <span class="attribute-pill px-4 py-1.5 text-xs text-soft">POC completa: Streamlit no repositório</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============ NAV ============ -->
+<div class="sticky top-3 z-50 max-w-6xl mx-auto px-8 -mt-14">
+  <nav id="tabs" class="glass-card !rounded-full relative flex p-1.5" style="backdrop-filter:blur(18px)">
+    <div id="ink"></div>
+    <div class="tabbtn active" data-p="analise">📊 Análise</div>
+    <div class="tabbtn" data-p="qa">💬 Pergunte às reviews</div>
+    <div class="tabbtn" data-p="mon">📡 Monitoramento &amp; FinOps</div>
+  </nav>
+</div>
+
+<main class="max-w-6xl mx-auto px-8 py-10">
+<!-- ================= ANÁLISE ================= -->
+<section class="panel active" id="analise">
+  <div class="flex flex-wrap gap-4 items-end mb-6" data-aos="fade-up">
+    <div><label>Analisar por</label>
+      <select id="selKind"><option>Autor</option><option>Gênero</option><option>Livro</option></select></div>
+    <div class="flex-1 min-w-[260px]"><label>Entidade</label>
+      <select id="selEnt" class="w-full"></select></div>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
+    <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in">
+      <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
+        stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-4xl font-black primary-color" id="kN">–</p><p class="text-softer text-xs mt-2">REVIEWS</p></div>
+    <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in" data-aos-delay="100">
+      <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
+        stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-4xl font-black primary-color" id="kS">–</p><p class="text-softer text-xs mt-2">NOTA MÉDIA</p></div>
+    <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in" data-aos-delay="200">
+      <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
+        stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-4xl font-black primary-color" id="kSent">–</p><p class="text-softer text-xs mt-2">SENTIMENTO DO TEXTO</p></div>
+    <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in" data-aos-delay="300">
+      <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
+        stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-4xl font-black primary-color" id="kU">–</p><p class="text-softer text-xs mt-2">LEITORES ÚNICOS</p></div>
+  </div>
+  <div class="grid md:grid-cols-2 gap-5 mb-6">
+    <div class="glass-card p-6" data-aos="fade-up"><div class="eyebrow">Distribuição</div>
+      <h3 class="font-bold mb-3">Notas dos leitores</h3><canvas id="chHist" height="170"></canvas></div>
+    <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="120"><div class="eyebrow">Tendência</div>
+      <h3 class="font-bold mb-3">Sentimento ao longo do tempo</h3><canvas id="chYear" height="170"></canvas></div>
+  </div>
+  <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Voz do leitor</div>
+    <h3 class="font-bold mb-3">Aspectos mencionados (cor = polaridade)</h3><canvas id="chAsp" height="140"></canvas></div>
+  <div class="glass-card p-6 mb-6" data-aos="fade-up">
+    <div class="eyebrow">IA Generativa</div><h3 class="font-bold mb-3">Sumário executivo</h3>
+    <button class="btn" id="btnSum">🧠 Gerar sumário executivo</button>
+    <div id="sumSkel" style="display:none"><div class="skeleton w-11/12"></div>
+      <div class="skeleton w-8/12"></div><div class="skeleton w-9/12"></div><div class="skeleton w-6/12"></div></div>
+    <div id="sumOut" class="summary mt-4" style="display:none"></div>
+  </div>
+  <div class="glass-card p-6" data-aos="fade-up">
+    <div class="eyebrow">Entrevistas</div><h3 class="font-bold mb-3">Leitores recomendados</h3>
+    <div class="overflow-x-auto"><table id="tblRev"><thead><tr><th>Leitor</th><th>Reviews</th>
+      <th>Votos úteis</th><th>Tam. médio</th><th>Nota média</th><th>Score</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</section>
+
+<!-- ================= Q&A ================= -->
+<section class="panel" id="qa">
+  <div class="glass-card p-6 mb-5" data-aos="fade-up">
+    <div class="eyebrow">Base de conhecimento</div>
+    <h3 class="font-bold mb-3">Pergunte em linguagem natural — respostas com fontes</h3>
+    <div class="mb-3 flex flex-wrap gap-2">
+      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)">Quais as críticas recorrentes aos livros de negócios?</span>
+      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)">O que os leitores acham do ritmo dos livros de ficção?</span>
+      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)">Algum autor tem problema de formatação nas edições Kindle?</span>
+    </div>
+    <div class="flex gap-3">
+      <input type="text" id="qInput" placeholder="Sua pergunta..." class="flex-1">
+      <button class="btn" id="btnQA">🔎 Responder</button>
+    </div>
+    <div class="note">Recuperação lexical (TF-IDF) offline + resposta extrativa em modo demo.
+      Em produção: embeddings multilíngues + Claude via Bedrock, sempre citando as reviews-fonte.</div>
+  </div>
+  <div id="qaSkel" class="glass-card p-6" style="display:none"><div class="skeleton w-7/12"></div>
+    <div class="skeleton w-10/12"></div><div class="skeleton w-9/12"></div></div>
+  <div id="qaOut"></div>
+</section>
+
+<!-- ================= MONITORAMENTO ================= -->
+<section class="panel" id="mon">
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
+    <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
+      stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-4xl font-black primary-color" id="mCalls">0</p><p class="text-softer text-xs mt-2">CHAMADAS LLM (SESSÃO)</p></div>
+    <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
+      stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-3xl font-black primary-color" id="mTok">0</p><p class="text-softer text-xs mt-2">TOKENS (IN+OUT)</p></div>
+    <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
+      stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-2xl font-black primary-color mt-2" id="mCost">US$ 0.0000</p><p class="text-softer text-xs mt-2">CUSTO ESTIMADO (HAIKU)</p></div>
+    <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
+      stroke-dasharray="60 200" stroke-linecap="round"/></svg>
+      <p class="mono text-4xl font-black primary-color" id="mLat">0</p><p class="text-softer text-xs mt-2">LATÊNCIA MÉDIA (MS)</p></div>
+  </div>
+  <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Observabilidade</div>
+    <h3 class="font-bold mb-3">Custo acumulado por chamada</h3><canvas id="chCost" height="140"></canvas></div>
+  <div class="glass-card p-6 mb-6" data-aos="fade-up">
+    <div class="eyebrow">FinOps</div><h3 class="font-bold mb-3">Simulador de custo mensal por modelo</h3>
+    <div class="flex flex-wrap gap-5 items-end mb-3">
+      <div><label>Análises/mês: <b class="primary-color" id="lblAn">500</b></label>
+        <input type="range" id="simAn" min="50" max="2000" step="50" value="500" class="w-56"></div>
+      <div><label>Tokens entrada/análise</label><input type="number" id="simIn" value="20000" step="5000"></div>
+      <div><label>Tokens saída/análise</label><input type="number" id="simOut" value="2000" step="500"></div>
+    </div>
+    <canvas id="chSim" height="130"></canvas>
+    <div class="note">Estratégia de cascata: modelo barato como principal, escalonando ao premium só quando a
+      confiança cai (Haiku no map, Sonnet no reduce). Referência: análise manual ≈ R$ 714.</div>
+  </div>
+  <div class="glass-card p-6" data-aos="fade-up">
+    <div class="eyebrow">Governança</div><h3 class="font-bold mb-3">Controle de orçamento (kill switch)</h3>
+    <div class="flex flex-wrap gap-5 items-center">
+      <div><label>Orçamento mensal de LLM (US$)</label>
+        <input type="number" id="budget" value="100" step="10" min="1"></div>
+      <div class="flex-1 min-w-[260px]"><div class="progress"><div id="budBar" style="width:0%"></div></div>
+        <div class="note" id="budTxt"></div></div>
+    </div>
+    <div class="alert ok" id="budAlert">✅ Dentro do orçamento. Em produção: AWS Budgets + tags de custo,
+      alarme em 80% e bloqueio automático em 100%.</div>
+  </div>
+</section>
+</main>
+<footer class="text-center text-softer text-xs pb-10 px-8">
+  Desafio Técnico A3Data · Flávia Guimarães Gaia Paula · visual no padrão
+  <a class="primary-color font-bold" href="https://github.com/sandeco/mira-animator" target="_blank">Mira Animator</a>
+  (tema mira-dark) · POC completa em Streamlit no repositório
+</footer>
+
+<script id="data" type="application/json">__DATA__</script>
+<script>
+window.__miraGuards();  // stubs anti-página-em-branco se algum CDN falhou
+const DATA = JSON.parse(document.getElementById('data').textContent);
+/* paletas por tema (light-minimal / mira-dark) */
+const PALETTES = {
+  light: { PRIM:'#E8722A', ACC:'#2A6FE8', GREEN:'#2E8B57', RED:'#C0392B',
+    SOFT:'rgba(26,26,26,.6)', GRID:'rgba(0,0,0,.07)',
+    HIST:['#f3c4a5','#efab7c','#ec9455','#ea8038','#E8722A'],
+    GRAD:['rgba(232,114,42,.30)','rgba(232,114,42,0)'], BAR4:'#8a6f5a' },
+  dark: { PRIM:'#FF904D', ACC:'#FFC766', GREEN:'#6FCF97', RED:'#EB5757',
+    SOFT:'rgba(255,255,255,.55)', GRID:'rgba(255,255,255,.08)',
+    HIST:['#7a4a2e','#9c5c36','#c26f3f','#e08146','#FF904D'],
+    GRAD:['rgba(255,144,77,.35)','rgba(255,144,77,0)'], BAR4:'#b0885f' },
+};
+let THEME = 'light';
+const pal = () => PALETTES[THEME];
+// resiliência: se o CDN do Chart.js falhar, o app segue funcional sem gráficos
+const hasChart = () => typeof Chart !== 'undefined';
+function applyChartDefaults() {
+  if (!hasChart()) return;
+  Chart.defaults.font.family = "'Inter',sans-serif";
+  Chart.defaults.animation = { duration: 800, easing: 'easeOutQuart' };
+  Chart.defaults.color = pal().SOFT;
+  Chart.defaults.scale.grid = { color: pal().GRID };
+}
+applyChartDefaults();
+
+/* ---------- toggle de tema ---------- */
+const themeToggle = document.getElementById('themeToggle');
+themeToggle.onclick = () => {
+  THEME = THEME === 'light' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = THEME === 'dark' ? 'dark' : '';
+  themeToggle.textContent = THEME === 'light' ? '🌙' : '☀️';
+  applyChartDefaults();
+  render(); sim(); drawCost();   // re-renderiza gráficos com a nova paleta
+};
+
+/* ---------- METÁFORA ANIMADA (loop contínuo, D3): reviews orbitando o livro ---------- */
+(function () {
+  const svg = d3.select('#orbit'), W = 240, C = W / 2;
+  svg.append('circle').attr('class', 'orb').attr('cx', C).attr('cy', C).attr('r', 86)
+     .attr('stroke-dasharray', '3 6');
+  svg.append('circle').attr('class', 'orb').attr('cx', C).attr('cy', C).attr('r', 56)
+     .attr('stroke-dasharray', '2 5');
+  // livro central com glow pulsante
+  const glow = svg.append('circle').attr('class', 'orbglow')
+     .attr('cx', C).attr('cy', C).attr('r', 30);
+  svg.append('text').attr('x', C).attr('y', C + 10).attr('text-anchor', 'middle')
+     .attr('font-size', 30).text('📖');
+  // satélites: estrelas (notas) e balões (reviews) em órbitas contrárias
+  const sats = [
+    { r: 86, speed: .00045, glyph: '⭐', phase: 0 }, { r: 86, speed: .00045, glyph: '💬', phase: 2.1 },
+    { r: 86, speed: .00045, glyph: '⭐', phase: 4.2 }, { r: 56, speed: -.0007, glyph: '💬', phase: 1 },
+    { r: 56, speed: -.0007, glyph: '🧠', phase: 3.6 },
+  ].map(s => ({ ...s, node: svg.append('text').attr('text-anchor', 'middle').attr('font-size', 15).text(s.glyph) }));
+  d3.timer(t => {
+    sats.forEach(s => {
+      const a = s.phase + t * s.speed;
+      s.node.attr('x', C + s.r * Math.cos(a)).attr('y', C + s.r * Math.sin(a) + 5);
+    });
+    glow.attr('r', 30 + 4 * Math.sin(t / 600));
+  });
+})();
+
+/* ---------- anéis das métricas girando em loop (padrão card_metricas do Mira) ---------- */
+document.querySelectorAll('.metric-ring circle').forEach((ring, i) => {
+  let offset = 0;
+  setInterval(() => { offset = (offset + 1.2 + (i % 4) * .3) % 260;
+    ring.setAttribute('stroke-dashoffset', -offset); }, 50);
+});
+
+/* ---------- tabs ---------- */
+const tabsEl = document.querySelectorAll('.tabbtn'), ink = document.getElementById('ink');
+function moveInk(t) { ink.style.left = t.offsetLeft + 'px'; ink.style.width = t.offsetWidth + 'px'; }
+tabsEl.forEach(t => t.onclick = () => {
+  tabsEl.forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  t.classList.add('active'); moveInk(t);
+  document.getElementById(t.dataset.p).classList.add('active');
+  if (typeof AOS !== 'undefined') AOS.refreshHard();
+});
+window.addEventListener('resize', () => moveInk(document.querySelector('.tabbtn.active')));
+
+/* ---------- contadores (d3 tween, padrão Mira) ---------- */
+function countUp(el, target, fmt) {
+  d3.select(el).transition().duration(1400).ease(d3.easeCubicOut)
+    .tween('count', () => { const i = d3.interpolateNumber(0, target);
+      return t => el.textContent = fmt(i(t)); });
+}
+
+/* ---------- análise ---------- */
+let charts = {};
+function mkChart(id, cfg) {
+  if (!hasChart()) return;
+  if (charts[id]) charts[id].destroy();
+  charts[id] = new Chart(document.getElementById(id), cfg);
+}
+
+const selKind = document.getElementById('selKind'), selEnt = document.getElementById('selEnt');
+function fillEnts() {
+  selEnt.innerHTML = DATA.entities.filter(e => e.kind === selKind.value)
+    .map(e => `<option value="${e.name}">${e.name} (${e.n} reviews)</option>`).join('');
+  render();
+}
+function ent() { return DATA.entities.find(e => e.kind === selKind.value && e.name === selEnt.value); }
+function render() {
+  const e = ent(); if (!e) return;
+  countUp(kN, e.n, v => Math.round(v).toLocaleString('pt-BR'));
+  countUp(kS, e.score, v => v.toFixed(2) + '★');
+  countUp(kSent, e.sent * 100, v => Math.round(v) + '%');
+  countUp(kU, e.users, v => Math.round(v).toLocaleString('pt-BR'));
+  mkChart('chHist', { type:'bar',
+    data:{ labels:['1★','2★','3★','4★','5★'], datasets:[{ data:[1,2,3,4,5].map(k => e.hist[k]||0),
+      backgroundColor:pal().HIST, borderRadius:8 }]},
+    options:{ plugins:{legend:{display:false}} }});
+  const ctx = document.getElementById('chYear').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 190);
+  grad.addColorStop(0, pal().GRAD[0]); grad.addColorStop(1, pal().GRAD[1]);
+  mkChart('chYear', { type:'line',
+    data:{ labels:e.yearly.map(y=>y[0]), datasets:[{ data:e.yearly.map(y=>y[1]),
+      borderColor:pal().PRIM, backgroundColor:grad, fill:true, tension:.35, pointRadius:2.5,
+      pointBackgroundColor:pal().ACC }]},
+    options:{ plugins:{legend:{display:false}}, scales:{y:{min:0,max:1}} }});
+  mkChart('chAsp', { type:'bar',
+    data:{ labels:e.aspects.map(a=>a.a), datasets:[{ data:e.aspects.map(a=>a.n),
+      backgroundColor:e.aspects.map(a=> a.p >= 0.15 ? pal().GREEN : a.p <= -0.15 ? pal().RED : pal().ACC),
+      borderRadius:8 }]},
+    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{
+      label: c => ` menções: ${c.raw} · polaridade: ${e.aspects[c.dataIndex].p}` }}} }});
+  document.querySelector('#tblRev tbody').innerHTML = e.reviewers.map(r =>
+    `<tr><td class="text-white">${r.name}</td><td>${r.n}</td><td>${r.votes}</td><td>${r.len}</td>
+     <td>${r.score}</td><td><b class="primary-color mono">${r.rel}</b></td></tr>`).join('');
+  sumOut.style.display = 'none'; sumSkel.style.display = 'none';
+}
+selKind.onchange = fillEnts; selEnt.onchange = render;
+
+/* ---------- log de uso ---------- */
+const usage = []; let totTok = 0;
+function logCall(tin, tout, ms) {
+  const cost = tin/1e6*0.80 + tout/1e6*4.00;
+  usage.push({ t: usage.length + 1, cost, ms });
+  totTok += tin + tout;
+  mCalls.textContent = usage.length;
+  mTok.textContent = totTok.toLocaleString('pt-BR');
+  mCost.textContent = 'US$ ' + usage.reduce((a,u)=>a+u.cost,0).toFixed(4);
+  mLat.textContent = Math.round(usage.reduce((a,u)=>a+u.ms,0)/usage.length);
+  drawCost();
+  updBudget();
+}
+function drawCost() {
+  if (!usage.length) return;
+  let acc = 0;
+  mkChart('chCost', { type:'line',
+    data:{ labels:usage.map(u=>u.t), datasets:[{ data:usage.map(u=> +(acc+=u.cost).toFixed(6)),
+      borderColor:pal().PRIM, tension:.25, pointRadius:3.5, pointBackgroundColor:pal().ACC }]},
+    options:{ plugins:{legend:{display:false}} }});
+}
+
+/* ---------- sumário com efeito de digitação ---------- */
+let typing = null;
+btnSum.onclick = () => {
+  const e = ent(); const t0 = performance.now();
+  clearInterval(typing);
+  sumOut.style.display = 'none'; sumSkel.style.display = 'block';
+  btnSum.disabled = true;
+  setTimeout(() => {
+    sumSkel.style.display = 'none'; sumOut.style.display = 'block';
+    const html = e.summary.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    const plain = html.replace(/<[^>]+>/g, '');
+    let i = 0;
+    typing = setInterval(() => {
+      i = Math.min(i + 6, plain.length);
+      sumOut.innerHTML = plain.slice(0, i) + '<span class="cursor"></span>';
+      if (i >= plain.length) { clearInterval(typing); sumOut.innerHTML = html; btnSum.disabled = false; }
+    }, 14);
+    logCall(20000, 700, performance.now() - t0);
+  }, 900 + Math.random() * 500);
+};
+
+/* ---------- Q&A ---------- */
+const PT_EN = { 'negócios':'business economics','negocios':'business economics',
+ 'ficção':'fiction story novel','ficcao':'fiction story novel','romance':'romance',
+ 'mistério':'mystery thriller','misterio':'mystery thriller','história':'history',
+ 'historia':'history','ritmo':'pacing slow fast paced','personagens':'characters character',
+ 'escrita':'writing prose written','enredo':'plot storyline','final':'ending conclusion',
+ 'críticas':'negative problem disappointing bad','criticas':'negative problem disappointing bad',
+ 'elogios':'great excellent loved','problema':'problem issue broken','problemas':'problems errors',
+ 'preço':'price expensive value','preco':'price expensive value','caro':'expensive price',
+ 'formatação':'formatting format edition','formatacao':'formatting format edition',
+ 'kindle':'kindle edition formatting','exemplos':'examples case','clareza':'clarity confusing',
+ 'profundidade':'depth superficial thorough','erros':'errors wrong','livros':'books book',
+ 'autoajuda':'self-help','tecnologia':'computers technology' };
+const NEG = /\b(not|poorly|bad|terrible|awful|waste|disappoint\w*|boring|weak|confusing|shallow|slow|broken|wrong|errors?|flat|predictable|repetitive|rushed|letdown|outdated|clumsy|superficial|too (?:much|many|expensive)|hard to|almost no|struggled|gave up|below my|expected more|no real|generic advice|magazine article)\b/i;
+function setQ(el) { qInput.value = el.textContent; qInput.focus(); }
+btnQA.onclick = () => {
+  const q = qInput.value.trim(); if (!q) return;
+  const t0 = performance.now();
+  qaOut.innerHTML = ''; qaSkel.style.display = 'block';
+  setTimeout(() => {
+    qaSkel.style.display = 'none';
+    let terms = q.toLowerCase().replace(/[?.,!]/g,'').split(/\s+/);
+    Object.entries(PT_EN).forEach(([pt, en]) => { if (q.toLowerCase().includes(pt)) terms = terms.concat(en.split(' ')); });
+    terms = [...new Set(terms.filter(w => w.length > 3))];
+    const scored = DATA.qa.map((r, i) => {
+      const hay = (r.a + ' ' + r.t + ' ' + r.g + ' ' + r.x).toLowerCase();
+      return { i, r, s: terms.reduce((a, w) => a + (hay.includes(w) ? 1 : 0), 0) };
+    }).filter(o => o.s > 1).sort((a, b) => b.s - a.s).slice(0, 8);
+    if (!scored.length) {
+      qaOut.innerHTML = '<div class="glass-card p-6">Não há evidência suficiente na base para responder.</div>';
+      return;
+    }
+    const pos = [], neg = [], seen = new Set();
+    scored.forEach((o, idx) => {
+      o.r.x.split(/(?<=[.!?])\s+/).forEach(s => {
+        const key = s.toLowerCase();
+        if (s.length < 25 || seen.has(key)) return; seen.add(key);
+        (NEG.test(s) ? neg : pos).push(`${s} <span class="src">[R${idx}]</span>`);
+      });
+    });
+    const li = (arr, empty) => arr.slice(0,4).map((s,i) =>
+      `<li style="animation-delay:${i*120}ms">${s}</li>`).join('') || `<li>${empty}</li>`;
+    const srcRows = scored.map((o, idx) =>
+      `<tr><td><b class="src">[R${idx}]</b></td><td>${o.r.a}</td><td>${o.r.t}</td><td>${o.r.s}★</td><td>${o.r.x.slice(0,140)}…</td></tr>`).join('');
+    qaOut.innerHTML = `<div class="glass-card p-6 mb-5">
+      <div class="note" style="margin:0 0 10px">[MODO DEMO — resposta extrativa offline; em produção, Claude via Bedrock com o mesmo contrato de citação]</div>
+      <p><span class="badge-pos">Pontos fortes recorrentes</span></p><ul class="ans list-disc pl-5">${li(pos,'(sem destaques)')}</ul>
+      <p class="mt-4"><span class="badge-neg">Críticas recorrentes</span></p><ul class="ans list-disc pl-5">${li(neg,'(sem críticas relevantes)')}</ul></div>
+      <div class="glass-card p-6"><h3 class="font-bold mb-3">📎 Fontes utilizadas (${scored.length} reviews)</h3>
+      <div class="overflow-x-auto"><table><thead><tr><th>id</th><th>Autor</th><th>Livro</th><th>Nota</th><th>Trecho</th></tr></thead>
+      <tbody>${srcRows}</tbody></table></div></div>`;
+    logCall(6000, 400, performance.now() - t0);
+  }, 700 + Math.random() * 400);
+};
+qInput.addEventListener('keydown', e => { if (e.key === 'Enter') btnQA.onclick(); });
+
+/* ---------- simulador ---------- */
+const MODELS = { 'Claude Haiku (Bedrock)':[0.80,4.00], 'Claude Sonnet (Bedrock)':[3.00,15.00],
+  'GPT-4o-mini (OpenAI)':[0.15,0.60], 'Llama 3 70B (Bedrock)':[0.72,0.72] };
+function sim() {
+  const an = +simAn.value, ti = +simIn.value, to = +simOut.value;
+  lblAn.textContent = an;
+  const vals = Object.values(MODELS).map(([pi, po]) => +((ti/1e6*pi + to/1e6*po) * an * 5.5).toFixed(2));
+  mkChart('chSim', { type:'bar',
+    data:{ labels:Object.keys(MODELS), datasets:[{ data:vals,
+      backgroundColor:[pal().PRIM, pal().ACC, pal().GREEN, pal().BAR4], borderRadius:8 }]},
+    options:{ plugins:{legend:{display:false},
+      title:{display:true, color:pal().SOFT, text:`Custo LLM mensal (R$) para ${an} análises`}} }});
+}
+[simAn, simIn, simOut].forEach(el => el.oninput = sim);
+
+/* ---------- orçamento ---------- */
+function updBudget() {
+  const tot = usage.reduce((a, u) => a + u.cost, 0), b = +budget.value || 1;
+  const pct = Math.min(tot / b * 100, 100);
+  budBar.style.width = Math.max(pct, tot > 0 ? 2 : 0) + '%';
+  budBar.style.background = pct >= 80 ? 'linear-gradient(90deg,#EB5757,#f28b8b)' : '';
+  budTxt.textContent = `Consumido: US$ ${tot.toFixed(4)} de US$ ${b} (${pct.toFixed(2)}%)`;
+  const bad = pct >= 80;
+  if (bad !== budAlert.classList.contains('bad')) {
+    budAlert.className = 'alert ' + (bad ? 'bad' : 'ok');
+    budAlert.innerHTML = bad
+      ? '⛔ Acima de 80% do orçamento: em produção, alarme via AWS Budgets + SNS e bloqueio automático de novas chamadas (kill switch).'
+      : '✅ Dentro do orçamento. Em produção: AWS Budgets + tags de custo, alarme em 80% e bloqueio automático em 100%.';
+  }
+}
+budget.oninput = updBudget;
+
+/* ---------- init ---------- */
+if (typeof AOS !== 'undefined') {
+  AOS.init({ duration: 700, easing: 'ease-out-cubic', once: true });
+} else {  // CDN falhou: remove data-aos para nada ficar invisível
+  document.querySelectorAll('[data-aos]').forEach(el => el.removeAttribute('data-aos'));
+}
+fillEnts(); sim(); updBudget();
+moveInk(document.querySelector('.tabbtn.active'));
+</script>
+</body>
+</html>
