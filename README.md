@@ -1,5 +1,9 @@
 # 📚 Review Insights — MVP
 
+![CI](https://github.com/flaviagaia/review-insights-demo/actions/workflows/ci.yml/badge.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![LangChain](https://img.shields.io/badge/LangChain-LCEL-orange)
+
 **Demo ao vivo:** [flaviagaia.github.io/review-insights-demo](https://flaviagaia.github.io/review-insights-demo/)
 
 Análise inteligente de avaliações de livros com NLP e IA Generativa: de dias de leitura manual
