@@ -129,9 +129,11 @@ class ExtractiveMockLLM(LLM):
 
         material = prompt.split("### REVIEWS")[-1]
         seen, sentences = set(), []
-        for s in re.split(r"(?<=[.!?])\s+", material):
-            s = re.sub(r"^\[\d★\]\s*[^:]{0,60}:\s*", "", s.strip().lstrip("- ").strip())
-            if 30 < len(s) < 400 and s.lower() not in seen:
+        for s in re.split(r"(?<=[.!?])\s+|\n+", material):
+            s = s.strip().lstrip("- ").strip()
+            # remove cabeçalhos "[5★] Título:" em QUALQUER posição da frase
+            s = re.sub(r"\[\d★\]\s*[^:]{0,80}:\s*", " ", s).strip()
+            if 30 < len(s) < 320 and s.lower() not in seen:
                 seen.add(s.lower())
                 sentences.append(s)
         if len(sentences) < 3:
