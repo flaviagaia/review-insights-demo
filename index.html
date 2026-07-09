@@ -303,7 +303,7 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
     </div>
     <div id="chSim" class="vizbox"></div>
     <div class="note">Estratégia de cascata: modelo barato como principal, escalonando ao premium só quando a
-      confiança cai (Haiku no map, Sonnet no reduce). Referência: análise manual ≈ R$ 714.</div>
+      confiança cai (Haiku no map, Sonnet no reduce). Cotação: US$ 1 = R$ 5,14 (09/07/2026). Referência: análise manual ≈ R$ 714.</div>
   </div>
   <div class="glass-card p-6" data-aos="fade-up">
     <div class="eyebrow">Governança</div><h3 class="font-bold mb-3">Controle de orçamento (kill switch)</h3>
@@ -319,7 +319,7 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
 </section>
 </main>
 <footer class="text-center text-softer text-xs pb-10 px-8">
-  Desafio Técnico A3Data · Flávia Guimarães Gaia Paula · visual no padrão
+  Flávia Guimarães Gaia Paula · MVP Review Insights · visual no padrão
   <a class="primary-color font-bold" href="https://github.com/sandeco/mira-animator" target="_blank">Mira Animator</a>
   (tema mira-dark) · POC completa em Streamlit no repositório
 </footer>
@@ -339,6 +339,7 @@ const PALETTES = {
     HIST:['#7a4a2e','#9c5c36','#c26f3f','#e08146','#FF904D'],
     GRAD:['rgba(255,144,77,.35)','rgba(255,144,77,0)'], BAR4:'#b0885f' },
 };
+const USD_BRL = 5.14;  // cotação USD/BRL de 09/07/2026 (awesomeapi, ask 5,1367)
 let THEME = 'light';
 const pal = () => PALETTES[THEME];
 // gráficos em HTML/CSS puro: sem dependência de lib de chart
@@ -476,7 +477,8 @@ function logCall(tin, tout, ms) {
   totTok += tin + tout;
   mCalls.textContent = usage.length;
   mTok.textContent = totTok.toLocaleString('pt-BR');
-  mCost.textContent = 'US$ ' + usage.reduce((a,u)=>a+u.cost,0).toFixed(4);
+  const totUsd = usage.reduce((a,u)=>a+u.cost,0);
+  mCost.textContent = 'US$ ' + totUsd.toFixed(4) + ' \u2248 R$ ' + (totUsd*USD_BRL).toFixed(3);
   mLat.textContent = Math.round(usage.reduce((a,u)=>a+u.ms,0)/usage.length);
   drawCost();
   updBudget();
@@ -486,6 +488,31 @@ function drawCost() {
   let acc = 0;
   const cum = usage.map(u => +(acc += u.cost).toFixed(6));
   renderSpark('chCost', cum, usage.map(u => '#' + u.t), pal().PRIM);
+}
+
+/* ---------- idioma das respostas geradas ----------
+   Com LLM real (Streamlit + OpenAI/Bedrock) o modelo sintetiza no idioma
+   escolhido. Nesta demo extrativa: títulos e rótulos seguem o idioma;
+   citações permanecem no original (citação é evidência, não se traduz). */
+const LANG = {
+  pt: { pos: 'Pontos fortes recorrentes', neg: 'Críticas recorrentes',
+        semPos: '(sem destaques)', semNeg: '(sem críticas relevantes)',
+        fontes: 'Fontes utilizadas', autor: 'Autor', livro: 'Livro',
+        nota: 'Nota', trecho: 'Trecho',
+        demoNote: '[MODO DEMO — resposta extrativa offline; em produção, Claude via Bedrock com o mesmo contrato de citação. Citações permanecem no idioma original.]' },
+  en: { pos: 'Recurring strengths', neg: 'Recurring criticisms',
+        semPos: '(no highlights)', semNeg: '(no relevant criticisms)',
+        fontes: 'Sources used', autor: 'Author', livro: 'Book',
+        nota: 'Rating', trecho: 'Excerpt',
+        demoNote: '[DEMO MODE — offline extractive answer; in production, Claude via Bedrock with the same citation contract.]' },
+};
+function localizeSummary(text) {
+  if (langSel.value !== 'en') return text;
+  return text
+    .replace('[MODO DEMO — LLM extrativo offline; em produção, Claude via Bedrock com o mesmo chain]',
+             '[DEMO MODE — offline extractive LLM; in production, Claude via Bedrock with the same chain]')
+    .replace('**Pontos fortes recorrentes:**', '**Recurring strengths:**')
+    .replace('**Críticas recorrentes:**', '**Recurring criticisms:**');
 }
 
 /* ---------- sumário com efeito de digitação ---------- */
@@ -574,7 +601,7 @@ function sim() {
   lblAn.textContent = an;
   const cores = [pal().PRIM, pal().ACC, pal().GREEN, pal().BAR4];
   renderBars('chSim', Object.entries(MODELS).map(([nome, [pi, po]], i) => ({
-    l: nome, v: +((ti/1e6*pi + to/1e6*po) * an * 5.5).toFixed(2), c: cores[i] })),
+    l: nome, v: +((ti/1e6*pi + to/1e6*po) * an * USD_BRL).toFixed(2), c: cores[i] })),
     v => 'R$ ' + v.toFixed(2));
 }
 
