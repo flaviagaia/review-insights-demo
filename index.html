@@ -387,7 +387,11 @@ tabsEl.forEach(t => t.onclick = () => {
   t.classList.add('active'); moveInk(t);
   document.getElementById(t.dataset.p).classList.add('active');
   if (typeof AOS !== 'undefined') AOS.refreshHard();
-  setTimeout(forceReveal, 400);  // nada fica invisível se o AOS não disparar
+  setTimeout(() => {  // nada fica invisível + gráficos com dimensões corretas
+    forceReveal();
+    if (t.dataset.p === 'analise') render();
+    if (t.dataset.p === 'mon') { sim(); drawCost(); }
+  }, 420);
 });
 window.addEventListener('resize', () => moveInk(document.querySelector('.tabbtn.active')));
 
@@ -588,7 +592,10 @@ if (typeof AOS !== 'undefined') {
 } else {  // CDN falhou: remove data-aos para nada ficar invisível
   document.querySelectorAll('[data-aos]').forEach(el => el.removeAttribute('data-aos'));
 }
-setTimeout(forceReveal, 1500);  // failsafe global pós-carregamento
+setTimeout(() => {  // failsafe global: revela tudo e reconstrói gráficos
+  forceReveal();
+  render(); sim();
+}, 1200);
 fillEnts(); sim(); updBudget();
 moveInk(document.querySelector('.tabbtn.active'));
 </script>
