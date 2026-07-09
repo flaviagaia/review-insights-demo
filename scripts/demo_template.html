@@ -13,8 +13,7 @@
 <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
 <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
 <script src="https://d3js.org/d3.v7.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"
-        onerror="var s=document.createElement('script');s.src='https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js';document.head.appendChild(s)"></script>
+
 <script>
 /* Resiliência: se algum CDN falhar, a página degrada com elegância em vez de morrer em branco */
 window.__miraGuards = (() => {
@@ -142,6 +141,18 @@ ul.ans li { margin:8px 0; line-height:1.55; color:var(--mira-text-soft);
   animation:shake .5s cubic-bezier(.22,1,.36,1); box-shadow:0 0 26px rgba(235,87,87,.25); }
 @keyframes shake { 0%,100%{transform:none} 20%{transform:translateX(-6px)} 40%{transform:translateX(5px)}
   60%{transform:translateX(-3px)} 80%{transform:translateX(2px)} }
+.vizbox { padding:6px 2px; }
+.hbar-row { display:flex; align-items:center; gap:10px; margin:7px 0; }
+.hbar-label { flex:0 0 130px; font-size:12px; color:var(--mira-text-soft); text-align:right;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hbar-track { flex:1; background:var(--mira-pill-bg); border-radius:9999px; height:18px; overflow:hidden; }
+.hbar-fill { height:100%; border-radius:9999px; min-width:2px;
+  transition:width .8s cubic-bezier(.22,1,.36,1); }
+.hbar-val { flex:0 0 64px; font-family:'JetBrains Mono',monospace; font-size:11.5px;
+  color:var(--mira-text-soft); }
+.spark { width:100%; height:150px; display:block; }
+.spark-lbls { display:flex; justify-content:space-between; font-size:10.5px;
+  color:var(--mira-text-softer); margin-top:4px; }
 .note { font-size:12px; color:var(--mira-text-softer); font-style:italic; margin-top:10px; line-height:1.5; }
 label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-bottom:5px;
   font-weight:600; letter-spacing:.6px; text-transform:uppercase; }
@@ -152,6 +163,13 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
 </head>
 <body>
 <div id="themeToggle" title="Alternar tema claro/escuro">🌙</div>
+<select id="langSel" title="Idioma das respostas geradas"
+  style="position:fixed;top:16px;right:70px;z-index:60;padding:.5rem .7rem;border-radius:9999px;
+         font-size:12.5px;font-weight:600;background:var(--mira-card-bg);
+         border:1px solid var(--mira-card-border);color:var(--mira-text);backdrop-filter:blur(12px)">
+  <option value="pt">🇧🇷 PT</option>
+  <option value="en">🇺🇸 EN</option>
+</select>
 
 <!-- ============ HERO com metáfora animada (loop contínuo D3) ============ -->
 <header class="anim-stage relative overflow-hidden">
@@ -211,12 +229,12 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
   </div>
   <div class="grid md:grid-cols-2 gap-5 mb-6">
     <div class="glass-card p-6" data-aos="fade-up"><div class="eyebrow">Distribuição</div>
-      <h3 class="font-bold mb-3">Notas dos leitores</h3><canvas id="chHist" height="170"></canvas></div>
+      <h3 class="font-bold mb-3">Notas dos leitores</h3><div id="chHist" class="vizbox"></div></div>
     <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="120"><div class="eyebrow">Tendência</div>
-      <h3 class="font-bold mb-3">Sentimento ao longo do tempo</h3><canvas id="chYear" height="170"></canvas></div>
+      <h3 class="font-bold mb-3">Sentimento ao longo do tempo</h3><div id="chYear" class="vizbox"></div></div>
   </div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Voz do leitor</div>
-    <h3 class="font-bold mb-3">Aspectos mencionados (cor = polaridade)</h3><canvas id="chAsp" height="140"></canvas></div>
+    <h3 class="font-bold mb-3">Aspectos mencionados (cor = polaridade)</h3><div id="chAsp" class="vizbox"></div></div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up">
     <div class="eyebrow">IA Generativa</div><h3 class="font-bold mb-3">Sumário executivo</h3>
     <button class="btn" id="btnSum">🧠 Gerar sumário executivo</button>
@@ -274,7 +292,7 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
       <p class="mono text-4xl font-black primary-color" id="mLat">0</p><p class="text-softer text-xs mt-2">LATÊNCIA MÉDIA (MS)</p></div>
   </div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Observabilidade</div>
-    <h3 class="font-bold mb-3">Custo acumulado por chamada</h3><canvas id="chCost" height="140"></canvas></div>
+    <h3 class="font-bold mb-3">Custo acumulado por chamada</h3><div id="chCost" class="vizbox"></div></div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up">
     <div class="eyebrow">FinOps</div><h3 class="font-bold mb-3">Simulador de custo mensal por modelo</h3>
     <div class="flex flex-wrap gap-5 items-end mb-3">
@@ -283,9 +301,9 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
       <div><label>Tokens entrada/análise</label><input type="number" id="simIn" value="20000" step="5000"></div>
       <div><label>Tokens saída/análise</label><input type="number" id="simOut" value="2000" step="500"></div>
     </div>
-    <canvas id="chSim" height="130"></canvas>
+    <div id="chSim" class="vizbox"></div>
     <div class="note">Estratégia de cascata: modelo barato como principal, escalonando ao premium só quando a
-      confiança cai (Haiku no map, Sonnet no reduce). Referência: análise manual ≈ R$ 714.</div>
+      confiança cai (Haiku no map, Sonnet no reduce). Cotação: US$ 1 = R$ 5,14 (09/07/2026). Referência: análise manual ≈ R$ 714.</div>
   </div>
   <div class="glass-card p-6" data-aos="fade-up">
     <div class="eyebrow">Governança</div><h3 class="font-bold mb-3">Controle de orçamento (kill switch)</h3>
@@ -301,7 +319,7 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
 </section>
 </main>
 <footer class="text-center text-softer text-xs pb-10 px-8">
-  Desafio Técnico A3Data · Flávia Guimarães Gaia Paula · visual no padrão
+  Flávia Guimarães Gaia Paula · MVP Review Insights · visual no padrão
   <a class="primary-color font-bold" href="https://github.com/sandeco/mira-animator" target="_blank">Mira Animator</a>
   (tema mira-dark) · POC completa em Streamlit no repositório
 </footer>
@@ -321,18 +339,10 @@ const PALETTES = {
     HIST:['#7a4a2e','#9c5c36','#c26f3f','#e08146','#FF904D'],
     GRAD:['rgba(255,144,77,.35)','rgba(255,144,77,0)'], BAR4:'#b0885f' },
 };
+const USD_BRL = 5.14;  // cotação USD/BRL de 09/07/2026 (awesomeapi, ask 5,1367)
 let THEME = 'light';
 const pal = () => PALETTES[THEME];
-// resiliência: se o CDN do Chart.js falhar, o app segue funcional sem gráficos
-const hasChart = () => typeof Chart !== 'undefined';
-function applyChartDefaults() {
-  if (!hasChart()) return;
-  Chart.defaults.font.family = "'Inter',sans-serif";
-  Chart.defaults.animation = { duration: 800, easing: 'easeOutQuart' };
-  Chart.defaults.color = pal().SOFT;
-  Chart.defaults.scale.grid = { color: pal().GRID };
-}
-applyChartDefaults();
+// gráficos em HTML/CSS puro: sem dependência de lib de chart
 
 /* ---------- toggle de tema ---------- */
 const themeToggle = document.getElementById('themeToggle');
@@ -340,7 +350,6 @@ themeToggle.onclick = () => {
   THEME = THEME === 'light' ? 'dark' : 'light';
   document.documentElement.dataset.theme = THEME === 'dark' ? 'dark' : '';
   themeToggle.textContent = THEME === 'light' ? '🌙' : '☀️';
-  applyChartDefaults();
   render(); sim(); drawCost();   // re-renderiza gráficos com a nova paleta
 };
 
@@ -387,8 +396,20 @@ tabsEl.forEach(t => t.onclick = () => {
   t.classList.add('active'); moveInk(t);
   document.getElementById(t.dataset.p).classList.add('active');
   if (typeof AOS !== 'undefined') AOS.refreshHard();
+  setTimeout(() => {  // nada fica invisível + gráficos com dimensões corretas
+    forceReveal();
+    if (t.dataset.p === 'analise') render();
+    if (t.dataset.p === 'mon') { sim(); drawCost(); }
+  }, 420);
 });
 window.addEventListener('resize', () => moveInk(document.querySelector('.tabbtn.active')));
+
+/* Failsafe de acessibilidade: animação é enfeite, conteúdo é obrigação.
+   Se o AOS não disparar (scroll programático, página longa, rAF pausado),
+   força todos os elementos ao estado final visível. */
+function forceReveal() {
+  document.querySelectorAll('[data-aos]').forEach(el => el.classList.add('aos-animate'));
+}
 
 /* ---------- contadores (d3 tween, padrão Mira) ---------- */
 function countUp(el, target, fmt) {
@@ -397,12 +418,29 @@ function countUp(el, target, fmt) {
       return t => el.textContent = fmt(i(t)); });
 }
 
-/* ---------- análise ---------- */
-let charts = {};
-function mkChart(id, cfg) {
-  if (!hasChart()) return;
-  if (charts[id]) charts[id].destroy();
-  charts[id] = new Chart(document.getElementById(id), cfg);
+/* ---------- gráficos HTML/CSS (zero dependência: nunca falham) ---------- */
+function renderBars(id, items, fmt) {
+  const max = Math.max(...items.map(i => i.v), 1);
+  document.getElementById(id).innerHTML = items.map(i => `
+    <div class="hbar-row">
+      <div class="hbar-label" title="${i.l}">${i.l}</div>
+      <div class="hbar-track"><div class="hbar-fill" style="width:${(i.v / max * 100).toFixed(1)}%;background:${i.c}"></div></div>
+      <div class="hbar-val">${fmt ? fmt(i.v) : i.v.toLocaleString('pt-BR')}</div>
+    </div>`).join('');
+}
+function renderSpark(id, values, labels, color) {
+  const el = document.getElementById(id);
+  if (!values.length) { el.innerHTML = '<div class="note">sem dados</div>'; return; }
+  const W = 600, H = 150, min = Math.min(...values), max = Math.max(...values);
+  const nx = i => 8 + i * (W - 16) / Math.max(values.length - 1, 1);
+  const ny = v => H - 12 - (max === min ? .5 : (v - min) / (max - min)) * (H - 28);
+  const pts = values.map((v, i) => `${nx(i).toFixed(1)},${ny(v).toFixed(1)}`).join(' ');
+  el.innerHTML = `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"
+        stroke-linejoin="round" stroke-linecap="round"/>
+      ${values.map((v, i) => `<circle cx="${nx(i).toFixed(1)}" cy="${ny(v).toFixed(1)}" r="3" fill="${color}"/>`).join('')}
+    </svg>
+    <div class="spark-lbls"><span>${labels[0] ?? ''}</span><span>${labels[Math.floor(labels.length/2)] ?? ''}</span><span>${labels[labels.length-1] ?? ''}</span></div>`;
 }
 
 const selKind = document.getElementById('selKind'), selEnt = document.getElementById('selEnt');
@@ -415,29 +453,17 @@ function ent() { return DATA.entities.find(e => e.kind === selKind.value && e.na
 function render() {
   const e = ent(); if (!e) return;
   countUp(kN, e.n, v => Math.round(v).toLocaleString('pt-BR'));
-  countUp(kS, e.score, v => v.toFixed(2) + '★');
+  countUp(kS, e.score, v => v.toFixed(2) + '\u2605');
   countUp(kSent, e.sent * 100, v => Math.round(v) + '%');
   countUp(kU, e.users, v => Math.round(v).toLocaleString('pt-BR'));
-  mkChart('chHist', { type:'bar',
-    data:{ labels:['1★','2★','3★','4★','5★'], datasets:[{ data:[1,2,3,4,5].map(k => e.hist[k]||0),
-      backgroundColor:pal().HIST, borderRadius:8 }]},
-    options:{ plugins:{legend:{display:false}} }});
-  const ctx = document.getElementById('chYear').getContext('2d');
-  const grad = ctx.createLinearGradient(0, 0, 0, 190);
-  grad.addColorStop(0, pal().GRAD[0]); grad.addColorStop(1, pal().GRAD[1]);
-  mkChart('chYear', { type:'line',
-    data:{ labels:e.yearly.map(y=>y[0]), datasets:[{ data:e.yearly.map(y=>y[1]),
-      borderColor:pal().PRIM, backgroundColor:grad, fill:true, tension:.35, pointRadius:2.5,
-      pointBackgroundColor:pal().ACC }]},
-    options:{ plugins:{legend:{display:false}}, scales:{y:{min:0,max:1}} }});
-  mkChart('chAsp', { type:'bar',
-    data:{ labels:e.aspects.map(a=>a.a), datasets:[{ data:e.aspects.map(a=>a.n),
-      backgroundColor:e.aspects.map(a=> a.p >= 0.15 ? pal().GREEN : a.p <= -0.15 ? pal().RED : pal().ACC),
-      borderRadius:8 }]},
-    options:{ plugins:{legend:{display:false}, tooltip:{callbacks:{
-      label: c => ` menções: ${c.raw} · polaridade: ${e.aspects[c.dataIndex].p}` }}} }});
+  renderBars('chHist', [1,2,3,4,5].map((k, i) => ({
+    l: k + '\u2605', v: e.hist[k] || 0, c: pal().HIST[i] })));
+  renderSpark('chYear', e.yearly.map(y => y[1]), e.yearly.map(y => y[0]), pal().PRIM);
+  renderBars('chAsp', e.aspects.map(a => ({
+    l: a.a, v: a.n,
+    c: a.p >= 0.15 ? pal().GREEN : a.p <= -0.15 ? pal().RED : pal().ACC })));
   document.querySelector('#tblRev tbody').innerHTML = e.reviewers.map(r =>
-    `<tr><td class="text-white">${r.name}</td><td>${r.n}</td><td>${r.votes}</td><td>${r.len}</td>
+    `<tr><td style="color:var(--mira-text);font-weight:600">${r.name}</td><td>${r.n}</td><td>${r.votes}</td><td>${r.len}</td>
      <td>${r.score}</td><td><b class="primary-color mono">${r.rel}</b></td></tr>`).join('');
   sumOut.style.display = 'none'; sumSkel.style.display = 'none';
 }
@@ -451,7 +477,8 @@ function logCall(tin, tout, ms) {
   totTok += tin + tout;
   mCalls.textContent = usage.length;
   mTok.textContent = totTok.toLocaleString('pt-BR');
-  mCost.textContent = 'US$ ' + usage.reduce((a,u)=>a+u.cost,0).toFixed(4);
+  const totUsd = usage.reduce((a,u)=>a+u.cost,0);
+  mCost.textContent = 'US$ ' + totUsd.toFixed(4) + ' \u2248 R$ ' + (totUsd*USD_BRL).toFixed(3);
   mLat.textContent = Math.round(usage.reduce((a,u)=>a+u.ms,0)/usage.length);
   drawCost();
   updBudget();
@@ -459,10 +486,33 @@ function logCall(tin, tout, ms) {
 function drawCost() {
   if (!usage.length) return;
   let acc = 0;
-  mkChart('chCost', { type:'line',
-    data:{ labels:usage.map(u=>u.t), datasets:[{ data:usage.map(u=> +(acc+=u.cost).toFixed(6)),
-      borderColor:pal().PRIM, tension:.25, pointRadius:3.5, pointBackgroundColor:pal().ACC }]},
-    options:{ plugins:{legend:{display:false}} }});
+  const cum = usage.map(u => +(acc += u.cost).toFixed(6));
+  renderSpark('chCost', cum, usage.map(u => '#' + u.t), pal().PRIM);
+}
+
+/* ---------- idioma das respostas geradas ----------
+   Com LLM real (Streamlit + OpenAI/Bedrock) o modelo sintetiza no idioma
+   escolhido. Nesta demo extrativa: títulos e rótulos seguem o idioma;
+   citações permanecem no original (citação é evidência, não se traduz). */
+const LANG = {
+  pt: { pos: 'Pontos fortes recorrentes', neg: 'Críticas recorrentes',
+        semPos: '(sem destaques)', semNeg: '(sem críticas relevantes)',
+        fontes: 'Fontes utilizadas', autor: 'Autor', livro: 'Livro',
+        nota: 'Nota', trecho: 'Trecho',
+        demoNote: '[MODO DEMO — resposta extrativa offline; em produção, Claude via Bedrock com o mesmo contrato de citação. Citações permanecem no idioma original.]' },
+  en: { pos: 'Recurring strengths', neg: 'Recurring criticisms',
+        semPos: '(no highlights)', semNeg: '(no relevant criticisms)',
+        fontes: 'Sources used', autor: 'Author', livro: 'Book',
+        nota: 'Rating', trecho: 'Excerpt',
+        demoNote: '[DEMO MODE — offline extractive answer; in production, Claude via Bedrock with the same citation contract.]' },
+};
+function localizeSummary(text) {
+  if (langSel.value !== 'en') return text;
+  return text
+    .replace('[MODO DEMO — LLM extrativo offline; em produção, Claude via Bedrock com o mesmo chain]',
+             '[DEMO MODE — offline extractive LLM; in production, Claude via Bedrock with the same chain]')
+    .replace('**Pontos fortes recorrentes:**', '**Recurring strengths:**')
+    .replace('**Críticas recorrentes:**', '**Recurring criticisms:**');
 }
 
 /* ---------- sumário com efeito de digitação ---------- */
@@ -474,11 +524,11 @@ btnSum.onclick = () => {
   btnSum.disabled = true;
   setTimeout(() => {
     sumSkel.style.display = 'none'; sumOut.style.display = 'block';
-    const html = e.summary.replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+    const html = localizeSummary(e.summary).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     const plain = html.replace(/<[^>]+>/g, '');
-    let i = 0;
-    typing = setInterval(() => {
-      i = Math.min(i + 6, plain.length);
+    const tStart = performance.now();
+    typing = setInterval(() => {  // progresso por tempo real: não trava em aba de fundo
+      const i = Math.min(plain.length, Math.round((performance.now() - tStart) / 14) * 6);
       sumOut.innerHTML = plain.slice(0, i) + '<span class="cursor"></span>';
       if (i >= plain.length) { clearInterval(typing); sumOut.innerHTML = html; btnSum.disabled = false; }
     }, 14);
@@ -530,12 +580,13 @@ btnQA.onclick = () => {
       `<li style="animation-delay:${i*120}ms">${s}</li>`).join('') || `<li>${empty}</li>`;
     const srcRows = scored.map((o, idx) =>
       `<tr><td><b class="src">[R${idx}]</b></td><td>${o.r.a}</td><td>${o.r.t}</td><td>${o.r.s}★</td><td>${o.r.x.slice(0,140)}…</td></tr>`).join('');
+    const L = LANG[langSel.value];
     qaOut.innerHTML = `<div class="glass-card p-6 mb-5">
-      <div class="note" style="margin:0 0 10px">[MODO DEMO — resposta extrativa offline; em produção, Claude via Bedrock com o mesmo contrato de citação]</div>
-      <p><span class="badge-pos">Pontos fortes recorrentes</span></p><ul class="ans list-disc pl-5">${li(pos,'(sem destaques)')}</ul>
-      <p class="mt-4"><span class="badge-neg">Críticas recorrentes</span></p><ul class="ans list-disc pl-5">${li(neg,'(sem críticas relevantes)')}</ul></div>
-      <div class="glass-card p-6"><h3 class="font-bold mb-3">📎 Fontes utilizadas (${scored.length} reviews)</h3>
-      <div class="overflow-x-auto"><table><thead><tr><th>id</th><th>Autor</th><th>Livro</th><th>Nota</th><th>Trecho</th></tr></thead>
+      <div class="note" style="margin:0 0 10px">${L.demoNote}</div>
+      <p><span class="badge-pos">${L.pos}</span></p><ul class="ans list-disc pl-5">${li(pos, L.semPos)}</ul>
+      <p class="mt-4"><span class="badge-neg">${L.neg}</span></p><ul class="ans list-disc pl-5">${li(neg, L.semNeg)}</ul></div>
+      <div class="glass-card p-6"><h3 class="font-bold mb-3">📎 ${L.fontes} (${scored.length} reviews)</h3>
+      <div class="overflow-x-auto"><table><thead><tr><th>id</th><th>${L.autor}</th><th>${L.livro}</th><th>${L.nota}</th><th>${L.trecho}</th></tr></thead>
       <tbody>${srcRows}</tbody></table></div></div>`;
     logCall(6000, 400, performance.now() - t0);
   }, 700 + Math.random() * 400);
@@ -548,13 +599,12 @@ const MODELS = { 'Claude Haiku (Bedrock)':[0.80,4.00], 'Claude Sonnet (Bedrock)'
 function sim() {
   const an = +simAn.value, ti = +simIn.value, to = +simOut.value;
   lblAn.textContent = an;
-  const vals = Object.values(MODELS).map(([pi, po]) => +((ti/1e6*pi + to/1e6*po) * an * 5.5).toFixed(2));
-  mkChart('chSim', { type:'bar',
-    data:{ labels:Object.keys(MODELS), datasets:[{ data:vals,
-      backgroundColor:[pal().PRIM, pal().ACC, pal().GREEN, pal().BAR4], borderRadius:8 }]},
-    options:{ plugins:{legend:{display:false},
-      title:{display:true, color:pal().SOFT, text:`Custo LLM mensal (R$) para ${an} análises`}} }});
+  const cores = [pal().PRIM, pal().ACC, pal().GREEN, pal().BAR4];
+  renderBars('chSim', Object.entries(MODELS).map(([nome, [pi, po]], i) => ({
+    l: nome, v: +((ti/1e6*pi + to/1e6*po) * an * USD_BRL).toFixed(2), c: cores[i] })),
+    v => 'R$ ' + v.toFixed(2));
 }
+
 [simAn, simIn, simOut].forEach(el => el.oninput = sim);
 
 /* ---------- orçamento ---------- */
@@ -580,6 +630,10 @@ if (typeof AOS !== 'undefined') {
 } else {  // CDN falhou: remove data-aos para nada ficar invisível
   document.querySelectorAll('[data-aos]').forEach(el => el.removeAttribute('data-aos'));
 }
+setTimeout(() => {  // failsafe global: revela tudo e reconstrói gráficos
+  forceReveal();
+  render(); sim();
+}, 1200);
 fillEnts(); sim(); updBudget();
 moveInk(document.querySelector('.tabbtn.active'));
 </script>
