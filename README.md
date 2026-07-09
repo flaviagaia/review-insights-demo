@@ -104,7 +104,7 @@ books_data.csv  ──┘        │        (sentimento, tópicos,│aspectos, r
                            │                             │
                            └──> summarizer (map-reduce) ─┴─> Streamlit App
                                      │
-                              llm_client (mock | OpenAI | Bedrock)
+                              llm_chain — LangChain LCEL (mock | OpenAI | Bedrock)
                                      │
                               logs/llm_usage.jsonl (tokens, custo, latência)
 ```
@@ -195,7 +195,7 @@ nas 32 mil reviews 3★ o modelo separa 38% negativas / 42% positivas (H3);
 
 | Camada | Métrica | Alvo |
 |--------|---------|------|
-| Sentimento | F1 no holdout (rótulos = estrelas) | ≥ 0.85 |
+| Sentimento | recall de críticas (holdout + conjunto-ouro) | ≥ 0,80 (obtido: 0,82) |
 | Sumarização | Fidelidade (LLM-as-judge + amostra humana), cobertura de aspectos | ≥ 90% sem alucinação |
 | RAG (fase 2) | RAGAS: faithfulness, answer relevance, context recall | ≥ 0.8 |
 | Ranking de leitores | Precision@10 validada com analistas | ≥ 70% aprovação |
@@ -217,7 +217,7 @@ nas 32 mil reviews 3★ o modelo separa 38% negativas / 42% positivas (H3);
 │   ├── data_loader.py        # carga/limpeza (real ou amostra)
 │   ├── generate_sample.py    # amostra sintética (schema Kaggle)
 │   ├── nlp_pipeline.py       # sentimento, tópicos, aspectos, ranking
-│   ├── llm_client.py         # mock | OpenAI | Bedrock + logging de custo
+│   ├── llm_chain.py          # LangChain LCEL: mock | OpenAI | Bedrock + callback de custo
 │   ├── qa.py                 # Q&A (RAG-lite) com citação de fontes
 │   └── summarizer.py         # sumarização map-reduce
 ├── notebooks/                # storytelling da análise
