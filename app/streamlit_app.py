@@ -61,8 +61,9 @@ provider_sel = st.sidebar.selectbox("Provedor LLM", ["mock (offline/demo)", "ope
 provider = provider_sel.split()[0]
 language = st.sidebar.selectbox("Idioma da resposta (LLM real)", ["português", "english"])
 
-tab_analise, tab_qa, tab_monitor = st.tabs(
-    ["📊 Análise", "💬 Pergunte às reviews", "📡 Monitoramento & FinOps"]
+tab_analise, tab_qa, tab_monitor, tab_prod = st.tabs(
+    ["📊 Análise", "💬 Pergunte às reviews", "📡 Monitoramento & FinOps",
+     "☁️ Produção AWS"]
 )
 
 # ====================== ABA 1 — ANÁLISE ======================
@@ -204,3 +205,61 @@ with tab_monitor:
     else:
         st.success("✅ Dentro do orçamento. Em produção: AWS Budgets + tags de custo por "
                    "feature, com alarme em 80% e bloqueio em 100%.")
+
+# ====================== ABA 4 — PRODUÇÃO AWS ======================
+with tab_prod:
+    st.subheader("Do MVP à produção na AWS — plano incremental")
+    st.caption("Cada fase entrega valor por si só; a economia da fase 1 financia as seguintes. "
+               "Princípio: serverless-first (paga pelo uso), batch onde batch basta.")
+
+    st.markdown("""
+| Fase | Prazo | Escopo | Serviços AWS | Custo/mês |
+|---|---|---|---|---|
+| **0 · POC** | hoje | este app + pipeline local | — | ~R$ 0 |
+| **1 · Batch produtivo** | 2–4 sem | ingestão + NLP agendado + dashboard | S3, Glue/Athena, ECS Fargate, Step Functions, Bedrock (batch), QuickSight | US$ 150–400 |
+| **2 · Base de conhecimento** | 4–8 sem | RAG + chat "pergunte às reviews" | Bedrock Knowledge Bases (Titan + OpenSearch), API Gateway, Lambda | US$ 400–900 |
+| **3 · Escala e governança** | contínuo | avaliação contínua, guardrails, FinOps | Bedrock Guardrails, CloudWatch, Budgets, SageMaker Registry | proporcional |
+""")
+
+    c1, c2 = st.columns(2)
+    with c1:
+        st.markdown("""#### 🏗 Arquitetura alvo (fases 1–2)
+1. **Ingestão**: reviews brutas no **S3** (data lake, Parquet particionado)
+2. **Processamento**: **Glue** cataloga; **Step Functions** orquestra o pipeline
+   NLP em **ECS Fargate** (os mesmos `scripts/stage_*.py` deste repo, conteinerizados)
+3. **IA generativa**: **Bedrock** (Claude p/ sumário e Q&A; Titan p/ embeddings) —
+   as chains LangChain deste código rodam sem alteração via `langchain-aws`
+4. **Serving**: **API Gateway + Lambda** para consultas; **QuickSight**/este app
+   para os analistas
+5. **Vetores**: começar com **pgvector no Aurora** (~US$ 50–100/mês) e migrar a
+   OpenSearch Serverless só se a escala exigir (piso ~US$ 350/mês)""")
+        st.markdown("""#### 🔒 Segurança (LGPD)
+- Pseudonimização no ingest (hash + salt) — já demonstrada neste MVP
+- **Amazon Comprehend** detecta PII no texto livre antes de qualquer LLM
+- **KMS** em repouso, **VPC endpoints** (dado não sai da rede privada),
+  IAM least-privilege, **CloudTrail** ponta a ponta
+- **Bedrock Guardrails** filtra também a saída do modelo""")
+    with c2:
+        st.markdown("""#### 📡 Operação e qualidade
+- **Monitoramento em 3 camadas**: sistema (latência/erro/custo por tag),
+  dados (drift de vocabulário via PSI, taxa de PII) e qualidade
+  (LLM-as-judge com rubrica + revisão humana semanal)
+- **FinOps**: o log de custo por chamada deste app vira CloudWatch +
+  **AWS Budgets** com alarme em 80% e kill switch em 100%
+- **CI/CD**: o GitHub Actions deste repo + Terraform (IaC) + contas dev/prod;
+  prompts versionados com suite de regressão antes de promover
+- **Rollout**: 2–4 semanas em *shadow mode* ao lado do processo manual →
+  uso assistido com feedback embutido → descomissionamento do manual""")
+        st.markdown("""#### 🤖 Onde entram agentes de IA
+Este MVP usa **chains** (fluxo determinístico) de propósito: seleção →
+map-reduce → resposta não exige decisão autônoma, e chain é mais barato,
+auditável e previsível. **Agentes entram na fase 2**, quando o Q&A evoluir
+para multi-etapas: um agente **LangGraph** com controle de estado decompõe a
+pergunta, decide quais buscas fazer, verifica evidências e só então responde —
+com um agente supervisor validando fontes (padrão testado em produção com
+CrewAI). Regra de ouro: *chain até precisar de decisão; agente só com
+justificativa.*""")
+
+    st.info("💡 O mesmo código desta POC roda em produção: `LLM_PROVIDER=bedrock` "
+            "ativa o Claude via `langchain-aws`, e o pipeline em estágios já é "
+            "idempotente e retomável — pronto para o Step Functions.")
