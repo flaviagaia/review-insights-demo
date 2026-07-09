@@ -1,5 +1,7 @@
 # 📚 Review Insights — MVP
 
+![Review Insights](docs/banner.svg)
+
 ![CI](https://github.com/flaviagaia/review-insights-demo/actions/workflows/ci.yml/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
 ![LangChain](https://img.shields.io/badge/LangChain-LCEL-orange)
@@ -123,6 +125,22 @@ books_data.csv  ──┘        │        (sentimento, tópicos,│aspectos, r
   Observabilidade via `BaseCallbackHandler` (tokens, custo, latência por chamada); em produção,
   traces com **LangSmith** ligando `LANGCHAIN_TRACING_V2=true`, sem tocar no código.
 
+### 🎛 Engenharia de prompts aplicada
+
+Os prompts são tratados como código: versionados, comentados e cobertos pela
+suite de testes. Técnicas aplicadas (ver `src/qa.py` e `src/summarizer.py`):
+
+| Técnica | Onde | Efeito |
+|---|---|---|
+| Papel específico com objetivo | QA, MAP, REDUCE | respostas no vocabulário do negócio, não genéricas |
+| Regras numeradas e positivas | todos | instruções verificáveis ("cite o id") em vez de proibições vagas |
+| Contrato de formato + few-shot | QA (exemplo), MAP (template de bullet) | saída previsível, fácil de parsear e de auditar |
+| String de recusa exata | QA | recusa detectável programaticamente — casa com o guardrail de saída |
+| Autoverificação silenciosa | QA | o modelo confere citações e idioma antes de emitir a resposta final |
+| Separação dado × instrução | todos | delimitadores `<<<REVIEWS>>>` + instrução GUARD (anti-injection) |
+| Calibração no REDUCE | sumário | divergência entre blocos é reportada, não escondida |
+| Structured output (Pydantic) | `summarize_entity_structured` | contrato `ExecutiveSummary` validado, sem parsing frágil |
+
 ## 🚀 Como executar
 
 ```bash
@@ -174,6 +192,13 @@ nas 32 mil reviews 3★ o modelo separa 38% negativas / 42% positivas (H3);
 - **Criptografia**: S3/OpenSearch com **KMS**; tráfego via **VPC endpoints** (dados nunca
   saem da rede privada — Bedrock não usa dados para treino).
 - **Acesso**: IAM least-privilege por perfil; trilha de auditoria com CloudTrail.
+- **Guardrails de aplicação** (`src/guardrails.py`), em três gates de defesa em profundidade:
+  conteúdo impróprio ou injeção na **pergunta** é recusado antes de chamar o LLM;
+  pergunta **fora do escopo** (sem aderência real à base, medida pela similaridade do
+  retriever) é recusada com zero tokens gastos; na **saída**, toda citação `[Rn]` é
+  validada contra as fontes recuperadas — citação inexistente derruba a resposta inteira
+  (fail-closed anti-alucinação). Em produção, reforçado por **Amazon Bedrock Guardrails**
+  (filtros gerenciados de toxicidade/PII) como camada adicional.
 - Práticas herdadas de projetos com dados sensíveis de saúde — o mesmo rigor aplicado aqui.
 
 ### Monitoramento e custos (FinOps)
@@ -218,7 +243,8 @@ nas 32 mil reviews 3★ o modelo separa 38% negativas / 42% positivas (H3);
 │   ├── generate_sample.py    # amostra sintética (schema Kaggle)
 │   ├── nlp_pipeline.py       # sentimento, tópicos, aspectos, ranking
 │   ├── llm_chain.py          # LangChain LCEL: mock | OpenAI | Bedrock + callback de custo
-│   ├── qa.py                 # Q&A (RAG-lite) com citação de fontes
+│   ├── guardrails.py         # gates: conteúdo impróprio, escopo, validação de citações
+│   ├── qa.py                 # Q&A (RAG-lite) com citação de fontes + guardrails
 │   └── summarizer.py         # sumarização map-reduce
 ├── notebooks/                # storytelling da análise
 └── reports/                  # figuras e sumários gerados
