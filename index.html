@@ -526,9 +526,9 @@ btnSum.onclick = () => {
     sumSkel.style.display = 'none'; sumOut.style.display = 'block';
     const html = localizeSummary(e.summary).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
     const plain = html.replace(/<[^>]+>/g, '');
-    let i = 0;
-    typing = setInterval(() => {
-      i = Math.min(i + 6, plain.length);
+    const tStart = performance.now();
+    typing = setInterval(() => {  // progresso por tempo real: não trava em aba de fundo
+      const i = Math.min(plain.length, Math.round((performance.now() - tStart) / 14) * 6);
       sumOut.innerHTML = plain.slice(0, i) + '<span class="cursor"></span>';
       if (i >= plain.length) { clearInterval(typing); sumOut.innerHTML = html; btnSum.disabled = false; }
     }, 14);
