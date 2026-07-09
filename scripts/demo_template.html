@@ -684,7 +684,7 @@ const PT_EN = { 'negócios':'business economics','negocios':'business economics'
  'profundidade':'depth superficial thorough','erros':'errors wrong','livros':'books book',
  'autoajuda':'self-help','tecnologia':'computers technology' };
 /* "not"/"boring" soltos geram falsos negativos; exigimos contexto negativo. */
-const NEG = /\b(poorly|bad|terrible|awful|waste of|disappoint\w*|weak|confusing|shallow|broken|wrong|errors?|flat|predictable|repetitive|rushed|letdown|outdated|clumsy|superficial|not\s+(?:worth|good|great|recommended?|impressed|useful|helpful|engaging|original|well)|(?:do|does|did|would|could)\s*n[o']t\s+(?:work|deliver|translate|finish|recommend|hold|live up)|(?:this|the book|it) (?:was|is|felt) (?:boring|slow|dull)|too (?:much|many|expensive|slow|long)|hard to (?:follow|read|finish)|almost no|struggled|gave up|below my|expected more|no real|generic advice|magazine article)\b/i;
+const NEG = /\b(poorly|shortcomings?|painful|ill-\w+|typos?|misprints?|complaints?|(?<!no )(?<!without )problems?|bad|terrible|awful|waste of|disappoint\w*|weak|confusing|shallow|broken|wrong|errors?|flat|predictable|repetitive|rushed|letdown|outdated|clumsy|superficial|not\s+(?:worth|good|great|recommended?|impressed|useful|helpful|engaging|original|well)|(?:do|does|did|would|could)\s*n[o']t\s+(?:work|deliver|translate|finish|recommend|hold|live up)|(?:this|the book|it) (?:was|is|felt) (?:boring|slow|dull)|too (?:much|many|expensive|slow|long)|hard to (?:follow|read|finish)|almost no|struggled|gave up|below my|expected more|no real|generic advice|magazine article)\b/i;
 /* ---------- guardrails (mesma lógica de src/guardrails.py) ----------
    1. conteúdo impróprio / injeção -> recusa na entrada;
    2. fora do escopo (sem aderência lexical à base) -> recusa antes de "responder";
@@ -729,8 +729,10 @@ btnQA.onclick = () => {
     const pos = [], neg = [], seen = new Set();
     scored.forEach((o, idx) => {
       o.r.x.split(/(?<=[.!?])\s+|(?<=[a-z"\u201d][.!?])(?=["\u201cA-Z])/).forEach(s => {
+        s = s.trim();
         const key = s.toLowerCase();
-        if (s.length < 25 || seen.has(key)) return; seen.add(key);
+        // descarta duplicatas, frases curtas e trechos truncados (sem pontuação final)
+        if (s.length < 25 || seen.has(key) || !/[.!?"\u201d]$/.test(s)) return; seen.add(key);
         (NEG.test(s) ? neg : pos).push({ s, ref: idx });
       });
     });
