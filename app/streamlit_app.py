@@ -59,6 +59,7 @@ st.caption("De 3 dias de análise manual para segundos. NLP clássico (custo zer
 st.sidebar.header("Configuração")
 provider_sel = st.sidebar.selectbox("Provedor LLM", ["mock (offline/demo)", "openai", "bedrock"])
 provider = provider_sel.split()[0]
+language = st.sidebar.selectbox("Idioma da resposta (LLM real)", ["português", "english"])
 
 tab_analise, tab_qa, tab_monitor = st.tabs(
     ["📊 Análise", "💬 Pergunte às reviews", "📡 Monitoramento & FinOps"]
@@ -105,7 +106,7 @@ with tab_analise:
     st.subheader("Sumário executivo (LLM)")
     if st.button("🧠 Gerar sumário executivo", type="primary"):
         with st.spinner("Sumarizando reviews (map-reduce)..."):
-            summary = summarize_entity(sub, f"{mode.lower()} '{choice}'", provider)
+            summary = summarize_entity(sub, f"{mode.lower()} '{choice}'", provider, language=language)
         st.markdown(summary)
 
     st.subheader("Leitores recomendados para entrevista")
@@ -131,7 +132,7 @@ with tab_qa:
     question = st.text_input("Sua pergunta", value="" if ex.startswith("(") else ex)
     if st.button("🔎 Responder", type="primary") and question.strip():
         with st.spinner("Recuperando reviews e gerando resposta..."):
-            answer, sources = answer_question(question, get_retriever(), provider)
+            answer, sources = answer_question(question, get_retriever(), provider, language=language)
         st.markdown(answer)
         if not sources.empty:
             with st.expander(f"📎 Fontes utilizadas ({len(sources)} reviews)"):
