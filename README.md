@@ -211,7 +211,7 @@ nas 32 mil reviews 3★ o modelo separa 38% negativas / 42% positivas (H3);
 ## 📂 Estrutura
 
 ```
-├── app/streamlit_app.py      # POC em 3 abas: Análise | Pergunte às reviews | Monitoramento & FinOps
+├── app/streamlit_app.py       # POC em 4 abas: Análise | Pergunte às reviews | Monitoramento & FinOps | Produção AWS
 ├── scripts/run_analysis.py   # EDA + figuras da apresentação
 ├── src/
 │   ├── data_loader.py        # carga/limpeza (real ou amostra)
