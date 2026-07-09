@@ -13,59 +13,58 @@ para segundos, com custo, segurança e qualidade monitorados desde o primeiro di
 3 milhões de reviews públicas, processadas por amostragem aleatória (~378 mil) e exibidas com
 identificadores de leitores **pseudonimizados** (hash SHA-256).
 
-## 🧠 Mapa mental — o que foi usado para construir este MVP
+## 🗺 Como a solução funciona (e por quê)
 
 ```mermaid
-mindmap
-  root((Review Insights MVP))
-    Dados
-      Kaggle Amazon Books Reviews
-        3M reviews, 2.7GB
-      pyarrow streaming
-        amostra de 13% em 10s
-      pandas
-        limpeza, dedup, HTML residual
-      Checkpoints parquet
-        pipeline em estágios
-      Loader robusto a schemas
-    NLP clássico, custo zero
-      Sentimento por supervisão fraca
-        TF-IDF e LogReg balanceada
-        recall de críticas 0.82
-      Tópicos NMF
-      Aspectos por dicionário
-        polaridade por sentença
-      Ranking de leitores
-        score composto
-    Camada LLM sob demanda
-      LangChain LCEL
-        chains plugáveis: mock, OpenAI, Bedrock
-      Sumarização map-reduce
-      RAG-lite
-        respostas com fontes citadas
-      Log de custos
-        tokens, dólares, latência
-    Aplicação
-      POC Streamlit e Plotly
-        3 abas testadas
-      Demo HTML standalone
-        Chart.js
-        JSON embutido
-        simulador de custo
-        kill switch de orçamento
-    Design padrão Mira Animator
-      Temas light-minimal e mira-dark
-      Glassmorphism e Tailwind
-      AOS para entradas animadas
-      D3.js
-        loops contínuos
-        metáfora orbital
-    Publicação e segurança
-      GitHub Pages
-      Pseudonimização LGPD
-      noindex, zero credenciais
-      Fallback de CDN
+flowchart LR
+    K[("📚 Kaggle<br/>3M reviews · 2.7GB")]
+    subgraph P["1 · Preparação"]
+        direction TB
+        P1["pyarrow — amostra em ~10s"]
+        P2["pandas — limpeza e joins"]
+        P3["parquet — checkpoints"]
+    end
+    subgraph N["2 · NLP clássico — custo ~zero"]
+        direction TB
+        N1["Sentimento — TF-IDF + LogReg"]
+        N2["Tópicos e aspectos"]
+        N3["Ranking de leitores"]
+    end
+    subgraph L["3 · LLM sob demanda — LangChain"]
+        direction TB
+        L1["Sumário executivo — map-reduce"]
+        L2["Q&A — RAG com fontes citadas"]
+    end
+    subgraph E["4 · Entrega"]
+        direction TB
+        E1["App Streamlit — para a banca"]
+        E2["Demo web ao vivo — para todos"]
+    end
+    K --> P --> N --> L --> E
+    T["🔒📡 Transversal: pseudonimização · anti-injection · custo por chamada · testes/CI"]
+    P -.-> T
+    E -.-> T
+    classDef stage fill:#FFF6EC,stroke:#E8722A,color:#4A3120
+    classDef hero fill:#FDE8D7,stroke:#C05621,color:#7A3C10
+    classDef item fill:#FFFFFF,stroke:#E8B48A,color:#4A3120
+    class P,N,L,E stage
+    class K,T hero
+    class P1,P2,P3,N1,N2,N3,L1,L2,E1,E2 item
 ```
+
+**A leitura em uma frase:** 100% do volume passa pelo NLP clássico (barato e auditável);
+o LLM entra só onde gera valor único; segurança e observabilidade acompanham tudo.
+
+| Etapa | Tecnologia | Por quê |
+|---|---|---|
+| 1 · Preparação | pyarrow + parquet | varre 2,7GB em ~10s e cria checkpoints — pipeline retomável, cabe em pouca RAM |
+| 1 · Preparação | pandas | limpeza expressiva: dedup, HTML residual, joins com metadados |
+| 2 · NLP clássico | TF-IDF + LogReg | milhões de textos a custo ~zero; as estrelas rotulam o treino (zero anotação) |
+| 2 · NLP clássico | NMF + dicionários | tópicos e aspectos que o negócio entende e audita |
+| 3 · LLM | LangChain (LCEL) | mesmo chain roda offline (mock), OpenAI ou Bedrock; callback loga custo/latência |
+| 3 · LLM | map-reduce + RAG | escala para milhares de reviews; respostas sempre citam as fontes (anti-alucinação) |
+| 4 · Entrega | Streamlit + GitHub Pages | a banca clona e roda; qualquer pessoa testa pelo link, sem instalar nada |
+| Transversal | hash SHA-256 · sanitização · CI | LGPD na prática, prompts blindados contra injection, qualidade a cada push |
 
 ## 🚀 Duas formas de testar
 
