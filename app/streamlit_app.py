@@ -35,7 +35,7 @@ SIM_PRICING = {
     "GPT-4o-mini (OpenAI)": (0.15, 0.60),
     "Llama 3 70B (Bedrock)": (0.72, 0.72),
 }
-USD_BRL = 5.5
+USD_BRL = float(__import__("os").getenv("USD_BRL", "5.14"))  # cotação de 09/07/2026; override via env
 
 
 @st.cache_data(show_spinner="Carregando e processando dados...")
