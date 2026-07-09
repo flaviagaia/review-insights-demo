@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 280" role="img" aria-label="Review Insights">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#141414"/>
+      <stop offset="1" stop-color="#1f1610"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FF904D" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#FF904D" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="280" rx="14" fill="url(#bg)"/>
+  <circle cx="1060" cy="30" r="190" fill="url(#glow)"/>
+  <circle cx="90" cy="270" r="140" fill="url(#glow)" opacity="0.6"/>
+  <!-- órbita (metáfora do hero da demo) -->
+  <g transform="translate(1020,140)" fill="none" stroke="#FF904D">
+    <circle r="86" stroke-opacity="0.35" stroke-width="1.5"/>
+    <circle r="58" stroke-opacity="0.5" stroke-width="1.5"/>
+    <circle r="30" stroke-opacity="0.7" stroke-width="1.5"/>
+    <circle cx="58" cy="0" r="7" fill="#FF904D" stroke="none"/>
+    <circle cx="-45" cy="-52" r="5" fill="#FFE3CC" stroke="none"/>
+    <circle cx="-20" cy="66" r="4" fill="#E8722A" stroke="none"/>
+    <text x="-13" y="9" fill="#FFE3CC" stroke="none" font-family="Georgia, serif" font-size="26">📚</text>
+  </g>
+  <text x="64" y="118" font-family="Calibri, Arial, sans-serif" font-size="58" font-weight="800" fill="#FFFFFF">Review <tspan fill="#FF904D">Insights</tspan></text>
+  <text x="64" y="158" font-family="Calibri, Arial, sans-serif" font-size="21" fill="#FFE3CC">De 3 dias de análise manual para segundos — NLP + IA Generativa sobre 3 milhões de reviews</text>
+  <!-- pills -->
+  <g font-family="Calibri, Arial, sans-serif" font-size="14" fill="#FFE3CC">
+    <rect x="64" y="188" width="150" height="32" rx="16" fill="none" stroke="#FF904D" stroke-opacity="0.45"/>
+    <text x="82" y="209">LangChain LCEL</text>
+    <rect x="226" y="188" width="176" height="32" rx="16" fill="none" stroke="#FF904D" stroke-opacity="0.45"/>
+    <text x="244" y="209">NLP + LLM híbrido</text>
+    <rect x="414" y="188" width="204" height="32" rx="16" fill="none" stroke="#FF904D" stroke-opacity="0.45"/>
+    <text x="432" y="209">FinOps desde o dia 1</text>
+    <rect x="630" y="188" width="230" height="32" rx="16" fill="none" stroke="#FF904D" stroke-opacity="0.45"/>
+    <text x="648" y="209">Guardrails anti-alucinação</text>
+  </g>
+  <text x="64" y="252" font-family="Calibri, Arial, sans-serif" font-size="13" fill="#9a938c">Amazon Books Reviews (Kaggle) · 378 mil reviews processadas · leitores pseudonimizados (SHA-256)</text>
+</svg>
