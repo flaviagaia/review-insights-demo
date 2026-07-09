@@ -151,6 +151,13 @@ ul.ans li { margin:8px 0; line-height:1.55; color:var(--mira-text-soft);
 .hbar-val { flex:0 0 64px; font-family:'JetBrains Mono',monospace; font-size:11.5px;
   color:var(--mira-text-soft); }
 .spark { width:100%; height:150px; display:block; }
+.sparkwrap { position:relative; }
+.spark-dot { transition:r .12s; }
+.spark-tip { display:none; position:absolute; transform:translateX(-50%);
+  background:var(--mira-opt-bg); color:var(--mira-text);
+  border:1px solid var(--mira-icon-border); border-radius:8px;
+  padding:3px 10px; font-size:11.5px; white-space:nowrap; pointer-events:none;
+  box-shadow:0 4px 14px rgba(0,0,0,.16); z-index:5; }
 .spark-lbls { display:flex; justify-content:space-between; font-size:10.5px;
   color:var(--mira-text-softer); margin-top:4px; }
 .note { font-size:12px; color:var(--mira-text-softer); font-style:italic; margin-top:10px; line-height:1.5; }
@@ -163,7 +170,7 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
 </head>
 <body>
 <div id="themeToggle" title="Alternar tema claro/escuro">🌙</div>
-<select id="langSel" title="Idioma das respostas geradas"
+<select id="langSel" title="Idioma / Language"
   style="position:fixed;top:16px;right:70px;z-index:60;padding:.5rem .7rem;border-radius:9999px;
          font-size:12.5px;font-weight:600;background:var(--mira-card-bg);
          border:1px solid var(--mira-card-border);color:var(--mira-text);backdrop-filter:blur(12px)">
@@ -178,13 +185,13 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
     <div>
       <h1 class="text-4xl md:text-5xl font-black" data-aos="fade-up">
         Review <span class="primary-color">Insights</span></h1>
-      <p class="text-soft text-lg mt-4 max-w-xl" data-aos="fade-up" data-aos-delay="120">
+      <p class="text-soft text-lg mt-4 max-w-xl" data-aos="fade-up" data-aos-delay="120" data-i18n="hero.sub">
         De <b class="primary-color">3 dias</b> de análise manual para <b class="primary-color">segundos</b> —
         NLP clássico a custo zero, LLM aplicado onde gera valor, FinOps desde o primeiro dia.</p>
       <div class="mt-5 flex flex-wrap gap-2" data-aos="fade-up" data-aos-delay="240">
-        <span class="attribute-pill px-4 py-1.5 text-xs text-soft">demo interativa</span>
-        <span class="attribute-pill px-4 py-1.5 text-xs text-soft">dados reais (amostra de 3M reviews, leitores pseudonimizados)</span>
-        <span class="attribute-pill px-4 py-1.5 text-xs text-soft">POC completa: Streamlit no repositório</span>
+        <span class="attribute-pill px-4 py-1.5 text-xs text-soft" data-i18n="pill.demo">demo interativa</span>
+        <span class="attribute-pill px-4 py-1.5 text-xs text-soft" data-i18n="pill.data">dados reais (amostra de 3M reviews, leitores pseudonimizados)</span>
+        <span class="attribute-pill px-4 py-1.5 text-xs text-soft" data-i18n="pill.poc">POC completa: Streamlit no repositório</span>
       </div>
     </div>
   </div>
@@ -194,9 +201,9 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
 <div class="sticky top-3 z-50 max-w-6xl mx-auto px-8 -mt-14">
   <nav id="tabs" class="glass-card !rounded-full relative flex p-1.5" style="backdrop-filter:blur(18px)">
     <div id="ink"></div>
-    <div class="tabbtn active" data-p="analise">📊 Análise</div>
-    <div class="tabbtn" data-p="qa">💬 Pergunte às reviews</div>
-    <div class="tabbtn" data-p="mon">📡 Monitoramento &amp; FinOps</div>
+    <div class="tabbtn active" data-p="analise" data-i18n="tab.analise">📊 Análise</div>
+    <div class="tabbtn" data-p="qa" data-i18n="tab.qa">💬 Pergunte às reviews</div>
+    <div class="tabbtn" data-p="mon" data-i18n="tab.mon">📡 Monitoramento &amp; FinOps</div>
   </nav>
 </div>
 
@@ -204,66 +211,66 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
 <!-- ================= ANÁLISE ================= -->
 <section class="panel active" id="analise">
   <div class="flex flex-wrap gap-4 items-end mb-6" data-aos="fade-up">
-    <div><label>Analisar por</label>
-      <select id="selKind"><option>Autor</option><option>Gênero</option><option>Livro</option></select></div>
-    <div class="flex-1 min-w-[260px]"><label>Entidade</label>
+    <div><label data-i18n="lbl.by">Analisar por</label>
+      <select id="selKind"><option value="Autor" data-i18n="opt.autor">Autor</option><option value="Gênero" data-i18n="opt.genero">Gênero</option><option value="Livro" data-i18n="opt.livro">Livro</option></select></div>
+    <div class="flex-1 min-w-[260px]"><label data-i18n="lbl.ent">Entidade</label>
       <select id="selEnt" class="w-full"></select></div>
   </div>
   <div class="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6">
     <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in">
       <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
         stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-4xl font-black primary-color" id="kN">–</p><p class="text-softer text-xs mt-2">REVIEWS</p></div>
+      <p class="mono text-4xl font-black primary-color" id="kN">–</p><p class="text-softer text-xs mt-2" data-i18n="kpi.n">REVIEWS</p></div>
     <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in" data-aos-delay="100">
       <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
         stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-4xl font-black primary-color" id="kS">–</p><p class="text-softer text-xs mt-2">NOTA MÉDIA</p></div>
+      <p class="mono text-4xl font-black primary-color" id="kS">–</p><p class="text-softer text-xs mt-2" data-i18n="kpi.s">NOTA MÉDIA</p></div>
     <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in" data-aos-delay="200">
       <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
         stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-4xl font-black primary-color" id="kSent">–</p><p class="text-softer text-xs mt-2">SENTIMENTO DO TEXTO</p></div>
+      <p class="mono text-4xl font-black primary-color" id="kSent">–</p><p class="text-softer text-xs mt-2" data-i18n="kpi.sent">SENTIMENTO DO TEXTO</p></div>
     <div class="glass-card p-6 relative overflow-hidden" data-aos="zoom-in" data-aos-delay="300">
       <svg class="metric-ring" viewBox="0 0 100 100"><circle cx="50" cy="50" r="42" fill="none"
         stroke="var(--mira-primary)" stroke-width="2" stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-4xl font-black primary-color" id="kU">–</p><p class="text-softer text-xs mt-2">LEITORES ÚNICOS</p></div>
+      <p class="mono text-4xl font-black primary-color" id="kU">–</p><p class="text-softer text-xs mt-2" data-i18n="kpi.u">LEITORES ÚNICOS</p></div>
   </div>
   <div class="grid md:grid-cols-2 gap-5 mb-6">
-    <div class="glass-card p-6" data-aos="fade-up"><div class="eyebrow">Distribuição</div>
-      <h3 class="font-bold mb-3">Notas dos leitores</h3><div id="chHist" class="vizbox"></div></div>
-    <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="120"><div class="eyebrow">Tendência</div>
-      <h3 class="font-bold mb-3">Sentimento ao longo do tempo</h3><div id="chYear" class="vizbox"></div></div>
+    <div class="glass-card p-6" data-aos="fade-up"><div class="eyebrow" data-i18n="eye.dist">Distribuição</div>
+      <h3 class="font-bold mb-3" data-i18n="h.hist">Notas dos leitores</h3><div id="chHist" class="vizbox"></div></div>
+    <div class="glass-card p-6" data-aos="fade-up" data-aos-delay="120"><div class="eyebrow" data-i18n="eye.trend">Tendência</div>
+      <h3 class="font-bold mb-3" data-i18n="h.trend">Sentimento ao longo do tempo</h3><div id="chYear" class="vizbox"></div></div>
   </div>
-  <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Voz do leitor</div>
-    <h3 class="font-bold mb-3">Aspectos mencionados (cor = polaridade)</h3><div id="chAsp" class="vizbox"></div></div>
+  <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow" data-i18n="eye.voice">Voz do leitor</div>
+    <h3 class="font-bold mb-3" data-i18n="h.asp">Aspectos mencionados (cor = polaridade)</h3><div id="chAsp" class="vizbox"></div></div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up">
-    <div class="eyebrow">IA Generativa</div><h3 class="font-bold mb-3">Sumário executivo</h3>
-    <button class="btn" id="btnSum">🧠 Gerar sumário executivo</button>
+    <div class="eyebrow" data-i18n="eye.ai">IA Generativa</div><h3 class="font-bold mb-3" data-i18n="h.sum">Sumário executivo</h3>
+    <button class="btn" id="btnSum" data-i18n="btn.sum">🧠 Gerar sumário executivo</button>
     <div id="sumSkel" style="display:none"><div class="skeleton w-11/12"></div>
       <div class="skeleton w-8/12"></div><div class="skeleton w-9/12"></div><div class="skeleton w-6/12"></div></div>
     <div id="sumOut" class="summary mt-4" style="display:none"></div>
   </div>
   <div class="glass-card p-6" data-aos="fade-up">
-    <div class="eyebrow">Entrevistas</div><h3 class="font-bold mb-3">Leitores recomendados</h3>
-    <div class="overflow-x-auto"><table id="tblRev"><thead><tr><th>Leitor</th><th>Reviews</th>
-      <th>Votos úteis</th><th>Tam. médio</th><th>Nota média</th><th>Score</th></tr></thead><tbody></tbody></table></div>
+    <div class="eyebrow" data-i18n="eye.int">Entrevistas</div><h3 class="font-bold mb-3" data-i18n="h.rev">Leitores recomendados</h3>
+    <div class="overflow-x-auto"><table id="tblRev"><thead><tr><th data-i18n="th.leitor">Leitor</th><th>Reviews</th>
+      <th data-i18n="th.votos">Votos úteis</th><th data-i18n="th.tam">Tam. médio</th><th data-i18n="th.nota">Nota média</th><th>Score</th></tr></thead><tbody></tbody></table></div>
   </div>
 </section>
 
 <!-- ================= Q&A ================= -->
 <section class="panel" id="qa">
   <div class="glass-card p-6 mb-5" data-aos="fade-up">
-    <div class="eyebrow">Base de conhecimento</div>
-    <h3 class="font-bold mb-3">Pergunte em linguagem natural — respostas com fontes</h3>
+    <div class="eyebrow" data-i18n="eye.kb">Base de conhecimento</div>
+    <h3 class="font-bold mb-3" data-i18n="h.qa">Pergunte em linguagem natural — respostas com fontes</h3>
     <div class="mb-3 flex flex-wrap gap-2">
-      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)">Quais as críticas recorrentes aos livros de negócios?</span>
-      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)">O que os leitores acham do ritmo dos livros de ficção?</span>
-      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)">Algum autor tem problema de formatação nas edições Kindle?</span>
+      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)" data-i18n="q.1">Quais as críticas recorrentes aos livros de negócios?</span>
+      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)" data-i18n="q.2">O que os leitores acham do ritmo dos livros de ficção?</span>
+      <span class="attribute-pill px-4 py-1.5 text-xs text-soft" onclick="setQ(this)" data-i18n="q.3">Algum autor tem problema de formatação nas edições Kindle?</span>
     </div>
     <div class="flex gap-3">
       <input type="text" id="qInput" placeholder="Sua pergunta..." class="flex-1">
-      <button class="btn" id="btnQA">🔎 Responder</button>
+      <button class="btn" id="btnQA" data-i18n="btn.qa">🔎 Responder</button>
     </div>
-    <div class="note">Recuperação lexical (TF-IDF) offline + resposta extrativa em modo demo.
+    <div class="note" data-i18n="note.qa">Recuperação lexical (TF-IDF) offline + resposta extrativa em modo demo.
       Em produção: embeddings multilíngues + Claude via Bedrock, sempre citando as reviews-fonte.</div>
   </div>
   <div id="qaSkel" class="glass-card p-6" style="display:none"><div class="skeleton w-7/12"></div>
@@ -277,38 +284,38 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
     <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
       stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-4xl font-black primary-color" id="mCalls">0</p><p class="text-softer text-xs mt-2">CHAMADAS LLM (SESSÃO)</p></div>
+      <p class="mono text-4xl font-black primary-color" id="mCalls">0</p><p class="text-softer text-xs mt-2" data-i18n="kpi.calls">CHAMADAS LLM (SESSÃO)</p></div>
     <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
       stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-3xl font-black primary-color" id="mTok">0</p><p class="text-softer text-xs mt-2">TOKENS (IN+OUT)</p></div>
+      <p class="mono text-3xl font-black primary-color" id="mTok">0</p><p class="text-softer text-xs mt-2" data-i18n="kpi.tok">TOKENS (IN+OUT)</p></div>
     <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
       stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-2xl font-black primary-color mt-2" id="mCost">US$ 0.0000</p><p class="text-softer text-xs mt-2">CUSTO ESTIMADO (HAIKU)</p></div>
+      <p class="mono text-2xl font-black primary-color mt-2" id="mCost">US$ 0.0000</p><p class="text-softer text-xs mt-2" data-i18n="kpi.cost">CUSTO ESTIMADO (HAIKU)</p></div>
     <div class="glass-card p-6 relative overflow-hidden"><svg class="metric-ring" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="42" fill="none" stroke="var(--mira-primary)" stroke-width="2"
       stroke-dasharray="60 200" stroke-linecap="round"/></svg>
-      <p class="mono text-4xl font-black primary-color" id="mLat">0</p><p class="text-softer text-xs mt-2">LATÊNCIA MÉDIA (MS)</p></div>
+      <p class="mono text-4xl font-black primary-color" id="mLat">0</p><p class="text-softer text-xs mt-2" data-i18n="kpi.lat">LATÊNCIA MÉDIA (MS)</p></div>
   </div>
-  <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow">Observabilidade</div>
-    <h3 class="font-bold mb-3">Custo acumulado por chamada</h3><div id="chCost" class="vizbox"></div></div>
+  <div class="glass-card p-6 mb-6" data-aos="fade-up"><div class="eyebrow" data-i18n="eye.obs">Observabilidade</div>
+    <h3 class="font-bold mb-3" data-i18n="h.cost">Custo acumulado por chamada</h3><div id="chCost" class="vizbox"></div></div>
   <div class="glass-card p-6 mb-6" data-aos="fade-up">
-    <div class="eyebrow">FinOps</div><h3 class="font-bold mb-3">Simulador de custo mensal por modelo</h3>
+    <div class="eyebrow">FinOps</div><h3 class="font-bold mb-3" data-i18n="h.sim">Simulador de custo mensal por modelo</h3>
     <div class="flex flex-wrap gap-5 items-end mb-3">
-      <div><label>Análises/mês: <b class="primary-color" id="lblAn">500</b></label>
+      <div><label><span data-i18n="lbl.an">Análises/mês:</span> <b class="primary-color" id="lblAn">500</b></label>
         <input type="range" id="simAn" min="50" max="2000" step="50" value="500" class="w-56"></div>
-      <div><label>Tokens entrada/análise</label><input type="number" id="simIn" value="20000" step="5000"></div>
-      <div><label>Tokens saída/análise</label><input type="number" id="simOut" value="2000" step="500"></div>
+      <div><label data-i18n="lbl.tin">Tokens entrada/análise</label><input type="number" id="simIn" value="20000" step="5000"></div>
+      <div><label data-i18n="lbl.tout">Tokens saída/análise</label><input type="number" id="simOut" value="2000" step="500"></div>
     </div>
     <div id="chSim" class="vizbox"></div>
-    <div class="note">Estratégia de cascata: modelo barato como principal, escalonando ao premium só quando a
+    <div class="note" data-i18n="note.cascade">Estratégia de cascata: modelo barato como principal, escalonando ao premium só quando a
       confiança cai (Haiku no map, Sonnet no reduce). Cotação: US$ 1 = R$ 5,14 (09/07/2026). Referência: análise manual ≈ R$ 714.</div>
   </div>
   <div class="glass-card p-6" data-aos="fade-up">
-    <div class="eyebrow">Governança</div><h3 class="font-bold mb-3">Controle de orçamento (kill switch)</h3>
+    <div class="eyebrow" data-i18n="eye.gov">Governança</div><h3 class="font-bold mb-3" data-i18n="h.budget">Controle de orçamento (kill switch)</h3>
     <div class="flex flex-wrap gap-5 items-center">
-      <div><label>Orçamento mensal de LLM (US$)</label>
+      <div><label data-i18n="lbl.budget">Orçamento mensal de LLM (US$)</label>
         <input type="number" id="budget" value="100" step="10" min="1"></div>
       <div class="flex-1 min-w-[260px]"><div class="progress"><div id="budBar" style="width:0%"></div></div>
         <div class="note" id="budTxt"></div></div>
@@ -319,9 +326,9 @@ label { font-size:11.5px; color:var(--mira-text-softer); display:block; margin-b
 </section>
 </main>
 <footer class="text-center text-softer text-xs pb-10 px-8">
-  Flávia Guimarães Gaia Paula · MVP Review Insights · visual no padrão
+  Flávia Guimarães Gaia Paula · MVP Review Insights · <span data-i18n="ft.style">visual no padrão</span>
   <a class="primary-color font-bold" href="https://github.com/sandeco/mira-animator" target="_blank">Mira Animator</a>
-  (tema mira-dark) · POC completa em Streamlit no repositório
+  <span data-i18n="ft.poc">(tema mira-dark) · POC completa em Streamlit no repositório</span>
 </footer>
 
 <script id="data" type="application/json">__DATA__</script>
@@ -418,6 +425,69 @@ function countUp(el, target, fmt) {
       return t => el.textContent = fmt(i(t)); });
 }
 
+/* ---------- i18n: idioma da UI + das respostas ---------- */
+const EN = () => document.getElementById('langSel').value === 'en';
+const LOC = () => EN() ? 'en-US' : 'pt-BR';
+const I18N = {
+  'hero.sub': ['De <b class="primary-color">3 dias</b> de análise manual para <b class="primary-color">segundos</b> — NLP clássico a custo zero, LLM aplicado onde gera valor, FinOps desde o primeiro dia.',
+               'From <b class="primary-color">3 days</b> of manual analysis to <b class="primary-color">seconds</b> — classic NLP at zero cost, LLM applied where it creates value, FinOps from day one.'],
+  'pill.demo': ['demo interativa', 'interactive demo'],
+  'pill.data': ['dados reais (amostra de 3M reviews, leitores pseudonimizados)', 'real data (sample of 3M reviews, pseudonymized readers)'],
+  'pill.poc': ['POC completa: Streamlit no repositório', 'full POC: Streamlit in the repository'],
+  'tab.analise': ['📊 Análise', '📊 Analysis'],
+  'tab.qa': ['💬 Pergunte às reviews', '💬 Ask the reviews'],
+  'tab.mon': ['📡 Monitoramento &amp; FinOps', '📡 Monitoring &amp; FinOps'],
+  'lbl.by': ['Analisar por', 'Analyze by'], 'lbl.ent': ['Entidade', 'Entity'],
+  'opt.autor': ['Autor', 'Author'], 'opt.genero': ['Gênero', 'Genre'], 'opt.livro': ['Livro', 'Book'],
+  'kpi.n': ['REVIEWS', 'REVIEWS'], 'kpi.s': ['NOTA MÉDIA', 'AVG RATING'],
+  'kpi.sent': ['SENTIMENTO DO TEXTO', 'TEXT SENTIMENT'], 'kpi.u': ['LEITORES ÚNICOS', 'UNIQUE READERS'],
+  'eye.dist': ['Distribuição', 'Distribution'], 'h.hist': ['Notas dos leitores', 'Reader ratings'],
+  'eye.trend': ['Tendência', 'Trend'], 'h.trend': ['Sentimento ao longo do tempo', 'Sentiment over time'],
+  'eye.voice': ['Voz do leitor', 'Reader voice'],
+  'h.asp': ['Aspectos mencionados (cor = polaridade)', 'Mentioned aspects (color = polarity)'],
+  'eye.ai': ['IA Generativa', 'Generative AI'], 'h.sum': ['Sumário executivo', 'Executive summary'],
+  'btn.sum': ['🧠 Gerar sumário executivo', '🧠 Generate executive summary'],
+  'eye.int': ['Entrevistas', 'Interviews'], 'h.rev': ['Leitores recomendados', 'Recommended readers'],
+  'th.leitor': ['Leitor', 'Reader'], 'th.votos': ['Votos úteis', 'Helpful votes'],
+  'th.tam': ['Tam. médio', 'Avg length'], 'th.nota': ['Nota média', 'Avg rating'],
+  'eye.kb': ['Base de conhecimento', 'Knowledge base'],
+  'h.qa': ['Pergunte em linguagem natural — respostas com fontes', 'Ask in natural language — answers with sources'],
+  'q.1': ['Quais as críticas recorrentes aos livros de negócios?', 'What are the recurring criticisms of business books?'],
+  'q.2': ['O que os leitores acham do ritmo dos livros de ficção?', 'What do readers think of the pacing of fiction books?'],
+  'q.3': ['Algum autor tem problema de formatação nas edições Kindle?', 'Does any author have formatting problems in Kindle editions?'],
+  'btn.qa': ['🔎 Responder', '🔎 Answer'],
+  'ph.q': ['Sua pergunta...', 'Your question...'],
+  'note.qa': ['Recuperação lexical (TF-IDF) offline + resposta extrativa em modo demo. Em produção: embeddings multilíngues + Claude via Bedrock, sempre citando as reviews-fonte.',
+              'Offline lexical retrieval (TF-IDF) + extractive answer in demo mode. In production: multilingual embeddings + Claude via Bedrock, always citing the source reviews.'],
+  'kpi.calls': ['CHAMADAS LLM (SESSÃO)', 'LLM CALLS (SESSION)'], 'kpi.tok': ['TOKENS (IN+OUT)', 'TOKENS (IN+OUT)'],
+  'kpi.cost': ['CUSTO ESTIMADO (HAIKU)', 'ESTIMATED COST (HAIKU)'], 'kpi.lat': ['LATÊNCIA MÉDIA (MS)', 'AVG LATENCY (MS)'],
+  'eye.obs': ['Observabilidade', 'Observability'], 'h.cost': ['Custo acumulado por chamada', 'Cumulative cost per call'],
+  'h.sim': ['Simulador de custo mensal por modelo', 'Monthly cost simulator per model'],
+  'lbl.an': ['Análises/mês:', 'Analyses/month:'],
+  'lbl.tin': ['Tokens entrada/análise', 'Input tokens/analysis'], 'lbl.tout': ['Tokens saída/análise', 'Output tokens/analysis'],
+  'note.cascade': ['Estratégia de cascata: modelo barato como principal, escalonando ao premium só quando a confiança cai (Haiku no map, Sonnet no reduce). Cotação: US$ 1 = R$ 5,14 (09/07/2026). Referência: análise manual ≈ R$ 714.',
+                   'Cascade strategy: cheap model as primary, escalating to premium only when confidence drops (Haiku for map, Sonnet for reduce). FX rate: US$ 1 = R$ 5.14 (07/09/2026). Reference: manual analysis ≈ R$ 714.'],
+  'eye.gov': ['Governança', 'Governance'], 'h.budget': ['Controle de orçamento (kill switch)', 'Budget control (kill switch)'],
+  'lbl.budget': ['Orçamento mensal de LLM (US$)', 'Monthly LLM budget (US$)'],
+  'ft.style': ['visual no padrão', 'design following'],
+  'ft.poc': ['(tema mira-dark) · POC completa em Streamlit no repositório', '(mira-dark theme) · full POC in Streamlit in the repository'],
+};
+const ASP_EN = { 'enredo':'plot', 'edição/formato':'edition/format', 'personagens':'characters',
+  'escrita':'writing', 'preço':'price', 'ritmo':'pacing', 'precisão':'accuracy',
+  'clareza':'clarity', 'final':'ending', 'profundidade':'depth' };
+const aspName = a => EN() ? (ASP_EN[a] || a) : a;
+function applyLang() {
+  const ix = EN() ? 1 : 0;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const v = I18N[el.dataset.i18n]; if (v) el.innerHTML = v[ix];
+  });
+  qInput.placeholder = I18N['ph.q'][ix];
+  // limpa saídas geradas no idioma anterior e re-renderiza tudo
+  sumOut.style.display = 'none'; qaOut.innerHTML = '';
+  render(); sim(); drawCost(); updBudget(true);
+  moveInk(document.querySelector('.tabbtn.active'));
+}
+
 /* ---------- gráficos HTML/CSS (zero dependência: nunca falham) ---------- */
 function renderBars(id, items, fmt) {
   const max = Math.max(...items.map(i => i.v), 1);
@@ -425,22 +495,41 @@ function renderBars(id, items, fmt) {
     <div class="hbar-row">
       <div class="hbar-label" title="${i.l}">${i.l}</div>
       <div class="hbar-track"><div class="hbar-fill" style="width:${(i.v / max * 100).toFixed(1)}%;background:${i.c}"></div></div>
-      <div class="hbar-val">${fmt ? fmt(i.v) : i.v.toLocaleString('pt-BR')}</div>
+      <div class="hbar-val">${fmt ? fmt(i.v) : i.v.toLocaleString(LOC())}</div>
     </div>`).join('');
 }
-function renderSpark(id, values, labels, color) {
+function renderSpark(id, values, labels, color, fmt) {
   const el = document.getElementById(id);
-  if (!values.length) { el.innerHTML = '<div class="note">sem dados</div>'; return; }
+  if (!values.length) { el.innerHTML = '<div class="note">' + (EN() ? 'no data' : 'sem dados') + '</div>'; return; }
   const W = 600, H = 150, min = Math.min(...values), max = Math.max(...values);
   const nx = i => 8 + i * (W - 16) / Math.max(values.length - 1, 1);
   const ny = v => H - 12 - (max === min ? .5 : (v - min) / (max - min)) * (H - 28);
   const pts = values.map((v, i) => `${nx(i).toFixed(1)},${ny(v).toFixed(1)}`).join(' ');
-  el.innerHTML = `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+  const f = fmt || (v => v.toLocaleString(LOC()));
+  el.innerHTML = `<div class="sparkwrap"><svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
       <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5"
         stroke-linejoin="round" stroke-linecap="round"/>
-      ${values.map((v, i) => `<circle cx="${nx(i).toFixed(1)}" cy="${ny(v).toFixed(1)}" r="3" fill="${color}"/>`).join('')}
-    </svg>
-    <div class="spark-lbls"><span>${labels[0] ?? ''}</span><span>${labels[Math.floor(labels.length/2)] ?? ''}</span><span>${labels[labels.length-1] ?? ''}</span></div>`;
+      ${values.map((v, i) => `<circle class="spark-dot" cx="${nx(i).toFixed(1)}" cy="${ny(v).toFixed(1)}" r="3" fill="${color}"/>`).join('')}
+    </svg><div class="spark-tip"></div>
+    <div class="spark-lbls"><span>${labels[0] ?? ''}</span><span>${labels[Math.floor(labels.length/2)] ?? ''}</span><span>${labels[labels.length-1] ?? ''}</span></div></div>`;
+  /* hover: aproxima do ponto mais perto do mouse e mostra rótulo + valor */
+  const wrap = el.firstElementChild, svg = wrap.querySelector('svg'),
+        tip = wrap.querySelector('.spark-tip'),
+        dots = [...wrap.querySelectorAll('.spark-dot')];
+  svg.addEventListener('mousemove', ev => {
+    const r = svg.getBoundingClientRect();
+    const mx = (ev.clientX - r.left) / r.width * W;
+    let bi = 0, bd = Infinity;
+    values.forEach((v, i) => { const d = Math.abs(nx(i) - mx); if (d < bd) { bd = d; bi = i; } });
+    dots.forEach((d, i) => d.setAttribute('r', i === bi ? 5.5 : 3));
+    tip.innerHTML = `<b>${labels[bi]}</b> · ${f(values[bi])}`;
+    tip.style.display = 'block';
+    const px = nx(bi) / W * r.width, py = ny(values[bi]) / H * r.height;
+    tip.style.left = Math.min(Math.max(px, 52), r.width - 52) + 'px';
+    tip.style.top = Math.max(py - 36, 2) + 'px';
+  });
+  svg.addEventListener('mouseleave', () => {
+    tip.style.display = 'none'; dots.forEach(d => d.setAttribute('r', 3)); });
 }
 
 const selKind = document.getElementById('selKind'), selEnt = document.getElementById('selEnt');
@@ -452,15 +541,16 @@ function fillEnts() {
 function ent() { return DATA.entities.find(e => e.kind === selKind.value && e.name === selEnt.value); }
 function render() {
   const e = ent(); if (!e) return;
-  countUp(kN, e.n, v => Math.round(v).toLocaleString('pt-BR'));
+  countUp(kN, e.n, v => Math.round(v).toLocaleString(LOC()));
   countUp(kS, e.score, v => v.toFixed(2) + '\u2605');
   countUp(kSent, e.sent * 100, v => Math.round(v) + '%');
-  countUp(kU, e.users, v => Math.round(v).toLocaleString('pt-BR'));
+  countUp(kU, e.users, v => Math.round(v).toLocaleString(LOC()));
   renderBars('chHist', [1,2,3,4,5].map((k, i) => ({
     l: k + '\u2605', v: e.hist[k] || 0, c: pal().HIST[i] })));
-  renderSpark('chYear', e.yearly.map(y => y[1]), e.yearly.map(y => y[0]), pal().PRIM);
+  renderSpark('chYear', e.yearly.map(y => y[1]), e.yearly.map(y => y[0]), pal().PRIM,
+    v => Math.round(v * 100) + (EN() ? '% positive' : '% positivo'));
   renderBars('chAsp', e.aspects.map(a => ({
-    l: a.a, v: a.n,
+    l: aspName(a.a), v: a.n,
     c: a.p >= 0.15 ? pal().GREEN : a.p <= -0.15 ? pal().RED : pal().ACC })));
   document.querySelector('#tblRev tbody').innerHTML = e.reviewers.map(r =>
     `<tr><td style="color:var(--mira-text);font-weight:600">${r.name}</td><td>${r.n}</td><td>${r.votes}</td><td>${r.len}</td>
@@ -476,7 +566,7 @@ function logCall(tin, tout, ms) {
   usage.push({ t: usage.length + 1, cost, ms });
   totTok += tin + tout;
   mCalls.textContent = usage.length;
-  mTok.textContent = totTok.toLocaleString('pt-BR');
+  mTok.textContent = totTok.toLocaleString(LOC());
   const totUsd = usage.reduce((a,u)=>a+u.cost,0);
   mCost.textContent = 'US$ ' + totUsd.toFixed(4) + ' \u2248 R$ ' + (totUsd*USD_BRL).toFixed(3);
   mLat.textContent = Math.round(usage.reduce((a,u)=>a+u.ms,0)/usage.length);
@@ -487,7 +577,8 @@ function drawCost() {
   if (!usage.length) return;
   let acc = 0;
   const cum = usage.map(u => +(acc += u.cost).toFixed(6));
-  renderSpark('chCost', cum, usage.map(u => '#' + u.t), pal().PRIM);
+  renderSpark('chCost', cum, usage.map(u => '#' + u.t), pal().PRIM,
+    v => 'US$ ' + v.toFixed(4) + ' \u2248 R$ ' + (v * USD_BRL).toFixed(3));
 }
 
 /* ---------- idioma das respostas geradas ----------
@@ -592,10 +683,34 @@ const PT_EN = { 'negócios':'business economics','negocios':'business economics'
  'kindle':'kindle edition formatting','exemplos':'examples case','clareza':'clarity confusing',
  'profundidade':'depth superficial thorough','erros':'errors wrong','livros':'books book',
  'autoajuda':'self-help','tecnologia':'computers technology' };
-const NEG = /\b(not|poorly|bad|terrible|awful|waste|disappoint\w*|boring|weak|confusing|shallow|slow|broken|wrong|errors?|flat|predictable|repetitive|rushed|letdown|outdated|clumsy|superficial|too (?:much|many|expensive)|hard to|almost no|struggled|gave up|below my|expected more|no real|generic advice|magazine article)\b/i;
+/* "not"/"boring" soltos geram falsos negativos; exigimos contexto negativo. */
+const NEG = /\b(poorly|bad|terrible|awful|waste of|disappoint\w*|weak|confusing|shallow|broken|wrong|errors?|flat|predictable|repetitive|rushed|letdown|outdated|clumsy|superficial|not\s+(?:worth|good|great|recommended?|impressed|useful|helpful|engaging|original|well)|(?:do|does|did|would|could)\s*n[o']t\s+(?:work|deliver|translate|finish|recommend|hold|live up)|(?:this|the book|it) (?:was|is|felt) (?:boring|slow|dull)|too (?:much|many|expensive|slow|long)|hard to (?:follow|read|finish)|almost no|struggled|gave up|below my|expected more|no real|generic advice|magazine article)\b/i;
+/* ---------- guardrails (mesma lógica de src/guardrails.py) ----------
+   1. conteúdo impróprio / injeção -> recusa na entrada;
+   2. fora do escopo (sem aderência lexical à base) -> recusa antes de "responder";
+   3. saída extrativa é ancorada por construção (só trechos reais + [Rn]). */
+const IMPROPER = /\b(porn\w*|sexo\s+expl[ií]cito|nude\w*|nsfw|como\s+(?:fazer|construir)\s+(?:uma?\s+)?(?:bomba|arma|veneno)|how\s+to\s+(?:make|build)\s+a?\s*(?:bomb|weapon|poison)|matar|kill\s+(?:him|her|them|someone)|suicid\w*|cpf|cart[ãa]o\s+de\s+cr[eé]dito|credit\s+card|senha|password|endere[çc]o\s+(?:do|da|de)\s|telefone\s+(?:do|da|de)\s|e-?mail\s+(?:do|da|de)\s|nome\s+real\s+(?:do|da|de)\s)/i;
+const INJECTION = /(ignore\s+(all|any|the|previous|prior|above)[\s\S]{0,40}?(instruction|prompt|rule)s?|disregard\s+(the\s+)?(system|previous|above)|you\s+are\s+now\s+|act\s+as\s+(if|a|an)\s|new\s+instructions?\s*:|system\s+prompt|<\s*\/?\s*(system|assistant|instruction)\s*>)/i;
+const ANCHOR = /\b(livros?|autor(?:es|a|as)?|leitor(?:es|a|as)?|reviews?|resenha\w*|avalia\w+|leitura|obras?|edi[çc][ãa]o|edi[çc][õo]es|kindle|escrita|ritmo|personag\w+|enredo|final|cap[ií]tulo\w*|g[êe]nero\w*|fic[çc][ãa]o|romances?|mist[ée]rios?|neg[óo]cios|autoajuda|elogi\w+|cr[ií]tica\w*|opini[ãa]o|opini[õo]es|sentimento\w*|aspecto\w*|acham?\b|books?|authors?|readers?|reading|editions?|writing|pacing|characters?|plots?|endings?|chapters?|genres?|fiction|novels?|business|praise\w*|criticisms?|complaints?|opinions?|think)\b/i;
+const GUARD_MSG = {
+  content: { pt: '🛡️ Não posso ajudar com esse tipo de conteúdo. Reformule a pergunta sobre os livros e as reviews da base.',
+             en: '🛡️ I can\'t help with that kind of content. Please rephrase your question about the books and reviews.' },
+  scope:   { pt: '🛡️ Fora do escopo: esta ferramenta responde apenas perguntas sobre os livros e reviews da base analisada.',
+             en: '🛡️ Out of scope: this tool only answers questions about the books and reviews in the dataset.' },
+};
+function guardCard(kind) {
+  return '<div class="glass-card p-6">' + GUARD_MSG[kind][langSel.value] +
+    '<div class="note" style="margin-top:10px">' + (EN() ? 'Guardrail active — the question never reaches the LLM (zero tokens, zero risk of made-up answers). In production: Amazon Bedrock Guardrails + this layer.' : 'Guardrail ativo — a pergunta não chega ao LLM (zero tokens, zero risco de resposta inventada). Em produção: Amazon Bedrock Guardrails + esta camada.') + '</div></div>';
+}
 function setQ(el) { qInput.value = el.textContent; qInput.focus(); }
 btnQA.onclick = () => {
   const q = qInput.value.trim(); if (!q) return;
+  if (IMPROPER.test(q) || INJECTION.test(q) || q.length > 500) {
+    qaOut.innerHTML = guardCard('content'); return;
+  }
+  if (!ANCHOR.test(q)) {  // pergunta sem âncora de domínio: fora do escopo
+    qaOut.innerHTML = guardCard('scope'); return;
+  }
   const t0 = performance.now();
   qaOut.innerHTML = ''; qaSkel.style.display = 'block';
   setTimeout(() => {
@@ -607,13 +722,13 @@ btnQA.onclick = () => {
       const hay = (r.a + ' ' + r.t + ' ' + r.g + ' ' + r.x).toLowerCase();
       return { i, r, s: terms.reduce((a, w) => a + (hay.includes(w) ? 1 : 0), 0) };
     }).filter(o => o.s > 1).sort((a, b) => b.s - a.s).slice(0, 8);
-    if (!scored.length) {
-      qaOut.innerHTML = '<div class="glass-card p-6">Não há evidência suficiente na base para responder.</div>';
+    if (!scored.length || scored[0].s < 2) {
+      qaOut.innerHTML = guardCard('scope');
       return;
     }
     const pos = [], neg = [], seen = new Set();
     scored.forEach((o, idx) => {
-      o.r.x.split(/(?<=[.!?])\s+/).forEach(s => {
+      o.r.x.split(/(?<=[.!?])\s+|(?<=[a-z"\u201d][.!?])(?=["\u201cA-Z])/).forEach(s => {
         const key = s.toLowerCase();
         if (s.length < 25 || seen.has(key)) return; seen.add(key);
         (NEG.test(s) ? neg : pos).push({ s, ref: idx });
@@ -656,21 +771,25 @@ function sim() {
 [simAn, simIn, simOut].forEach(el => el.oninput = sim);
 
 /* ---------- orçamento ---------- */
-function updBudget() {
+function updBudget(force) {
   const tot = usage.reduce((a, u) => a + u.cost, 0), b = +budget.value || 1;
   const pct = Math.min(tot / b * 100, 100);
   budBar.style.width = Math.max(pct, tot > 0 ? 2 : 0) + '%';
   budBar.style.background = pct >= 80 ? 'linear-gradient(90deg,#EB5757,#f28b8b)' : '';
-  budTxt.textContent = `Consumido: US$ ${tot.toFixed(4)} de US$ ${b} (${pct.toFixed(2)}%)`;
+  budTxt.textContent = (EN() ? 'Consumed' : 'Consumido') + `: US$ ${tot.toFixed(4)} ` +
+    (EN() ? 'of' : 'de') + ` US$ ${b} (${pct.toFixed(2)}%)`;
   const bad = pct >= 80;
-  if (bad !== budAlert.classList.contains('bad')) {
+  if (force || bad !== budAlert.classList.contains('bad')) {
     budAlert.className = 'alert ' + (bad ? 'bad' : 'ok');
     budAlert.innerHTML = bad
-      ? '⛔ Acima de 80% do orçamento: em produção, alarme via AWS Budgets + SNS e bloqueio automático de novas chamadas (kill switch).'
-      : '✅ Dentro do orçamento. Em produção: AWS Budgets + tags de custo, alarme em 80% e bloqueio automático em 100%.';
+      ? (EN() ? '⛔ Above 80% of budget: in production, AWS Budgets + SNS alarm and automatic blocking of new calls (kill switch).'
+              : '⛔ Acima de 80% do orçamento: em produção, alarme via AWS Budgets + SNS e bloqueio automático de novas chamadas (kill switch).')
+      : (EN() ? '✅ Within budget. In production: AWS Budgets + cost tags, alarm at 80% and automatic cutoff at 100%.'
+              : '✅ Dentro do orçamento. Em produção: AWS Budgets + tags de custo, alarme em 80% e bloqueio automático em 100%.');
   }
 }
 budget.oninput = updBudget;
+langSel.onchange = applyLang;
 
 /* ---------- init ---------- */
 if (typeof AOS !== 'undefined') {
