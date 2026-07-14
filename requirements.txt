@@ -6,7 +6,7 @@ scikit-learn>=1.7,<2
 matplotlib>=3.10,<4
 plotly>=6.0,<7
 streamlit>=1.50,<2
-langchain-core>=1.4,<2
+langchain-core>=1.4.9,<2
 pyarrow>=24.0,<25
 joblib>=1.5,<2
 
